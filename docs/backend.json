@@ -1,0 +1,514 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Campus Hub application, either a student or an administrator.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, used for communication.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The user's last name."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user within the application, defining their access permissions. (Enum: 'student', 'administrator')",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName",
+        "role",
+        "createdAt"
+      ]
+    },
+    "Quiz": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Quiz",
+      "type": "object",
+      "description": "Represents a quiz created and managed by administrators.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Quiz entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the quiz."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the quiz content or objectives."
+        },
+        "durationMinutes": {
+          "type": "number",
+          "description": "The recommended or enforced duration of the quiz in minutes."
+        },
+        "isPublished": {
+          "type": "boolean",
+          "description": "Indicates whether the quiz is currently published and available for students to take."
+        },
+        "adminId": {
+          "type": "string",
+          "description": "Reference to the User (administrator) who created or last managed this quiz. (Relationship: User 1:N Quiz)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the quiz was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the quiz was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "isPublished",
+        "adminId",
+        "createdAt"
+      ]
+    },
+    "Question": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Question",
+      "type": "object",
+      "description": "Represents an individual question within a quiz.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Question entity."
+        },
+        "quizId": {
+          "type": "string",
+          "description": "Reference to the Quiz this question belongs to. (Relationship: Quiz 1:N Question)"
+        },
+        "text": {
+          "type": "string",
+          "description": "The full text of the question."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of question (e.g., 'multiple_choice').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "points": {
+          "type": "number",
+          "description": "The number of points awarded for correctly answering this question."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the question was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the question was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "quizId",
+        "text",
+        "type",
+        "points",
+        "createdAt"
+      ]
+    },
+    "AnswerOption": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AnswerOption",
+      "type": "object",
+      "description": "Represents a single answer choice for a question.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AnswerOption entity."
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to the Question this answer option belongs to. (Relationship: Question 1:N AnswerOption)"
+        },
+        "text": {
+          "type": "string",
+          "description": "The text content of the answer option."
+        },
+        "isCorrect": {
+          "type": "boolean",
+          "description": "Indicates whether this answer option is the correct response for the question."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the answer option was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the answer option was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "questionId",
+        "text",
+        "isCorrect",
+        "createdAt"
+      ]
+    },
+    "QuizAttempt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QuizAttempt",
+      "type": "object",
+      "description": "Records a student's attempt at taking a specific quiz.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the QuizAttempt entity."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to the User (student) who made this quiz attempt. (Relationship: User 1:N QuizAttempt)"
+        },
+        "quizId": {
+          "type": "string",
+          "description": "Reference to the Quiz that was attempted. (Relationship: Quiz 1:N QuizAttempt)"
+        },
+        "startedAt": {
+          "type": "string",
+          "description": "Timestamp when the student started the quiz attempt.",
+          "format": "date-time"
+        },
+        "submittedAt": {
+          "type": "string",
+          "description": "Timestamp when the student submitted their quiz attempt.",
+          "format": "date-time"
+        },
+        "score": {
+          "type": "number",
+          "description": "The total score obtained by the student for this quiz attempt."
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the quiz attempt was fully completed and submitted."
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "quizId",
+        "startedAt",
+        "isCompleted"
+      ]
+    },
+    "StudentAnswer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StudentAnswer",
+      "type": "object",
+      "description": "Records a student's selected answer for a specific question within a quiz attempt.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StudentAnswer entity."
+        },
+        "quizAttemptId": {
+          "type": "string",
+          "description": "Reference to the QuizAttempt this answer belongs to. (Relationship: QuizAttempt 1:N StudentAnswer)"
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Reference to the Question that was answered. (Relationship: Question 1:N StudentAnswer)"
+        },
+        "selectedAnswerOptionId": {
+          "type": "string",
+          "description": "Reference to the AnswerOption chosen by the student for this question. (Relationship: AnswerOption 1:N StudentAnswer)"
+        },
+        "isCorrect": {
+          "type": "boolean",
+          "description": "Indicates whether the student's selected answer for this specific question was correct."
+        },
+        "answeredAt": {
+          "type": "string",
+          "description": "Timestamp when the student selected this answer option.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "quizAttemptId",
+        "questionId",
+        "selectedAnswerOptionId",
+        "isCorrect",
+        "answeredAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Write access is restricted to the user themselves (matching {userId}) or administrators. Read access is restricted to the user themselves or administrators.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_administrators/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection for role-based access control. An empty document exists here if the user with {userId} is an administrator. Used for atomic role checks in security rules via 'exists()'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who holds the administrator role."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_students/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection for role-based access control. An empty document exists here if the user with {userId} is a student. Used for atomic role checks in security rules via 'exists()'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who holds the student role."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/quizzes_published/{quizId}",
+        "definition": {
+          "entityName": "Quiz",
+          "schema": {
+            "$ref": "#/backend/entities/Quiz"
+          },
+          "description": "Stores quizzes that are published and available to students. Students have read access. The 'adminId' field in the document grants write access to the owning administrator. General administrators also have write access. Implicitly, documents here have 'isPublished: true'.",
+          "params": [
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the quiz."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{adminId}/quizzes_drafts/{quizId}",
+        "definition": {
+          "entityName": "Quiz",
+          "schema": {
+            "$ref": "#/backend/entities/Quiz"
+          },
+          "description": "Stores quizzes that are currently in draft status, accessible only by the creating administrator. The 'adminId' is inherent in the path. Implicitly, documents here have 'isPublished: false'.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The unique identifier of the administrator who owns this draft quiz."
+            },
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the draft quiz."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/quizzes_published/{quizId}/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Questions belonging to a published quiz. Students have read access when the parent quiz is published. Write access is restricted to the administrator who owns the parent quiz or general administrators. Includes denormalized 'quizAdminId' (from parent quiz) for authorization independence.",
+          "params": [
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the published quiz this question belongs to."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{adminId}/quizzes_drafts/{quizId}/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Questions belonging to a draft quiz. Accessible only by the creating administrator. The 'adminId' is inherent in the path.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The unique identifier of the administrator who owns the draft quiz."
+            },
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the draft quiz this question belongs to."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/quizzes_published/{quizId}/questions/{questionId}/answerOptions/{answerOptionId}",
+        "definition": {
+          "entityName": "AnswerOption",
+          "schema": {
+            "$ref": "#/backend/entities/AnswerOption"
+          },
+          "description": "Answer options for questions in a published quiz. Students have read access. Write access is restricted to the administrator who owns the grandparent quiz or general administrators. Includes denormalized 'quizAdminId' (from grandparent quiz) for authorization independence.",
+          "params": [
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the published quiz the grandparent question belongs to."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the question this answer option belongs to."
+            },
+            {
+              "name": "answerOptionId",
+              "description": "The unique identifier of the answer option."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{adminId}/quizzes_drafts/{quizId}/questions/{questionId}/answerOptions/{answerOptionId}",
+        "definition": {
+          "entityName": "AnswerOption",
+          "schema": {
+            "$ref": "#/backend/entities/AnswerOption"
+          },
+          "description": "Answer options for questions in a draft quiz. Accessible only by the creating administrator. The 'adminId' is inherent in the path.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The unique identifier of the administrator who owns the draft quiz."
+            },
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the draft quiz the grandparent question belongs to."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the question this answer option belongs to."
+            },
+            {
+              "name": "answerOptionId",
+              "description": "The unique identifier of the answer option."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{studentId}/quizAttempts/{quizAttemptId}",
+        "definition": {
+          "entityName": "QuizAttempt",
+          "schema": {
+            "$ref": "#/backend/entities/QuizAttempt"
+          },
+          "description": "Records a student's attempt at a quiz. Only the student (matching {studentId}) has read/write access. Includes denormalized 'quizAdminId' and 'quizIsPublished' (from the associated quiz) for authorization independence.",
+          "params": [
+            {
+              "name": "studentId",
+              "description": "The unique identifier of the student who made this quiz attempt."
+            },
+            {
+              "name": "quizAttemptId",
+              "description": "The unique identifier of the quiz attempt."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{studentId}/quizAttempts/{quizAttemptId}/studentAnswers/{studentAnswerId}",
+        "definition": {
+          "entityName": "StudentAnswer",
+          "schema": {
+            "$ref": "#/backend/entities/StudentAnswer"
+          },
+          "description": "Records a student's selected answer for a specific question within a quiz attempt. Only the student (matching {studentId}) has read/write access. Includes denormalized 'quizAdminId', 'quizIsPublished' (from the quiz), and 'quizAttemptIsCompleted' (from the parent quiz attempt) for authorization independence.",
+          "params": [
+            {
+              "name": "studentId",
+              "description": "The unique identifier of the student who made this quiz attempt."
+            },
+            {
+              "name": "quizAttemptId",
+              "description": "The unique identifier of the quiz attempt this answer belongs to."
+            },
+            {
+              "name": "studentAnswerId",
+              "description": "The unique identifier of the student's answer for a question."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure for Campus Hub prioritizes secure, scalable, and debuggable authorization by strictly adhering to the core design principles. This design employs **Authorization Independence** through strategic denormalization and **Structural Segregation** to achieve homogeneous security postures, making security rules simple and robust.\n\n**Authorization Independence (CRITICAL):**\nThis is achieved by denormalizing key authorization attributes directly into the documents where they are needed, thereby eliminating the need for `get()` calls in security rules. For instance, `quizAdminId` is denormalized into `Question` and `AnswerOption` documents within published quizzes, ensuring that their access control can be evaluated atomistically without querying the parent `Quiz` document. Similarly, `quizAdminId`, `quizIsPublished`, and `quizAttemptIsCompleted` are denormalized into `QuizAttempt` and `StudentAnswer` documents. This allows security rules to evaluate access based solely on the document being accessed and `request.auth.uid`, making transactions and batched writes reliable and rule debugging straightforward. Roles are managed via dedicated collections (`/roles_administrators/{userId}`), enabling efficient `exists()` checks for role-based access without `get()` operations on the `/users/{userId}` profile.\n\n**Structural Segregation (Homogeneous Security Posture) and QAPs:**\nTo enable secure `list` operations (QAPs - Queries as Authorization Policies) and simplify rules, data is segregated based on its security requirements:\n\n1.  **User Profiles and Roles:**\n    *   `/users/{userId}`: Stores personal user data, accessible by the user themselves or administrators. This adheres to **Private Data** modeling.\n    *   `/roles_administrators/{userId}` and `/roles_students/{userId}`: These collections serve as DBAC markers. The mere existence of a document at these paths signifies the user's role, allowing for simple `exists()` checks in security rules.\n\n2.  **Quizzes:**\n    *   `/quizzes_published/{quizId}`: This collection contains quizzes that are explicitly `isPublished: true`. All documents in this collection share the same security posture: read-only for students, and read/write for the `adminId` (owner) or general administrators. This segregation allows students to perform secure `list` queries of all available quizzes.\n    *   `/users/{adminId}/quizzes_drafts/{quizId}`: This nested collection stores quizzes that are `isPublished: false`. Documents here are accessible only to the specific `adminId` present in the path. This fulfills the **Use Hierarchical Paths for User-Owned Data** principle for administrator's private drafts and enforces a distinct security posture from published quizzes.\n\n3.  **Quiz Content (Questions, Answer Options):**\n    *   These entities are modeled as subcollections of their respective `Quiz` parent (e.g., `/quizzes_published/{quizId}/questions/{questionId}`). This continues the hierarchy and ensures their access control inherits from or is consistent with the parent quiz's security posture. Denormalized `quizAdminId` and `quizIsPublished` (where applicable) further support Authorization Independence for these subcollections.\n\n4.  **Student Quiz Attempts and Answers:**\n    *   `/users/{studentId}/quizAttempts/{quizAttemptId}`: This collection directly uses **Path-Based Ownership**, ensuring that only the specific `studentId` can access their quiz attempts. This structure inherently simplifies rules for student-specific data.\n    *   `/users/{studentId}/quizAttempts/{quizAttemptId}/studentAnswers/{studentAnswerId}`: Similarly, student answers are nested under their respective attempts, maintaining clear ownership and strong security. Denormalized fields like `quizAdminId`, `quizIsPublished`, and `quizAttemptIsCompleted` ensure full Authorization Independence for each `StudentAnswer` document.\n\nThis architecture ensures that security rules are concise, easy to write, and debug. Any `list` operation naturally adheres to the security model by querying a collection with a uniform access policy, thus satisfying QAPs. Atomic operations are preserved as all necessary authorization context is available within the requested document or its immediate path."
+  }
+}

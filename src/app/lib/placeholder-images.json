@@ -1,0 +1,29 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-students",
+      "description": "Students studying together in a modern campus library",
+      "imageUrl": "https://picsum.photos/seed/campus1/1200/600",
+      "imageHint": "students library"
+    },
+    {
+      "id": "quiz-math",
+      "description": "Mathematics and science background",
+      "imageUrl": "https://picsum.photos/seed/math/400/300",
+      "imageHint": "mathematics science"
+    },
+    {
+      "id": "quiz-history",
+      "description": "Historical landmarks and documents",
+      "imageUrl": "https://picsum.photos/seed/history/400/300",
+      "imageHint": "history culture"
+    },
+    {
+      "id": "quiz-tech",
+      "description": "Modern technology and coding",
+      "imageUrl": "https://picsum.photos/seed/tech/400/300",
+      "imageHint": "technology coding"
+    }
+  ]
+}

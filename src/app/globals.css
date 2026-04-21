@@ -1,0 +1,307 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── DESIGN SYSTEM ─ Campus Hub: Blue / Orange / Green SaaS ────────────── */
+/* Primary:  #2563EB  — Modern SaaS Blue (trust, education, clarity)         */
+/* Accent:   #F97316  — Action Orange (CTAs, highlights, alerts)              */
+/* Success:  #22C55E  — Achievement Green (scores, progress, completion)      */
+/* Base:     White / #F8FAFC — Premium neutral surface                        */
+/* Fonts:    Fraunces (headlines) · JetBrains Mono (UI/body)                  */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    /* ─── Core Brand Palette ─── */
+    /* Primary Blue */
+    --color-primary:       221 83% 53%;   /* #2563EB */
+    --color-primary-dark:  224 76% 38%;   /* #1E40AF */
+    --color-primary-light: 214 100% 92%;  /* #DBEAFE */
+
+    /* Accent Orange */
+    --color-accent:        25 95% 53%;    /* #F97316 */
+    --color-accent-dark:   17 87% 40%;    /* #C2410C */
+    --color-accent-light:  34 100% 92%;   /* #FFEDD5 */
+
+    /* Success Green */
+    --color-success:       142 71% 45%;   /* #22C55E */
+    --color-success-dark:  142 72% 29%;   /* #15803D */
+    --color-success-light: 141 84% 93%;   /* #DCFCE7 */
+
+    /* ─── Shadcn/ui Token Mapping ─── */
+    --background:          0 0% 100%;          /* #FFFFFF */
+    --foreground:          222 84% 5%;          /* #0F172A */
+    --card:                210 40% 98%;         /* #F8FAFC */
+    --card-foreground:     222 84% 5%;
+    --popover:             0 0% 100%;
+    --popover-foreground:  222 84% 5%;
+    --primary:             221 83% 53%;         /* Blue */
+    --primary-foreground:  0 0% 100%;
+    --secondary:           214 100% 92%;        /* Primary Light */
+    --secondary-foreground: 221 83% 40%;
+    --muted:               210 40% 96%;         /* #F1F5F9 */
+    --muted-foreground:    215 16% 47%;         /* #64748B */
+    --accent:              25 95% 53%;          /* Orange */
+    --accent-foreground:   0 0% 100%;
+    --destructive:         0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border:              214 32% 91%;         /* #E2E8F0 */
+    --input:               214 32% 91%;
+    --ring:                221 83% 53%;
+    --radius:              0.5rem;
+
+    /* ─── Chart Colors ─── */
+    --chart-1:   221 83% 53%;  /* blue   */
+    --chart-2:   142 71% 45%;  /* green  */
+    --chart-3:   25 95% 53%;   /* orange */
+    --chart-4:   269 60% 60%;  /* purple */
+    --chart-5:   0 84% 60%;    /* red    */
+
+    /* ─── Sidebar ─── */
+    --sidebar-background:         210 40% 98%;
+    --sidebar-foreground:         222 84% 5%;
+    --sidebar-primary:            221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent:             214 100% 92%;
+    --sidebar-accent-foreground:  221 83% 40%;
+    --sidebar-border:             214 32% 91%;
+    --sidebar-ring:               221 83% 53%;
+  }
+
+  .dark {
+    --background:           222 84% 5%;
+    --foreground:           210 40% 98%;
+    --card:                 222 47% 9%;
+    --card-foreground:      210 40% 98%;
+    --popover:              222 47% 9%;
+    --popover-foreground:   210 40% 98%;
+    --primary:              221 83% 60%;
+    --primary-foreground:   0 0% 100%;
+    --secondary:            217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted:                217 33% 17%;
+    --muted-foreground:     215 20% 65%;
+    --accent:               25 95% 58%;
+    --accent-foreground:    0 0% 100%;
+    --destructive:          0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border:               217 33% 17%;
+    --input:                217 33% 17%;
+    --ring:                 221 83% 60%;
+
+    --sidebar-background:         222 47% 9%;
+    --sidebar-foreground:         210 40% 98%;
+    --sidebar-primary:            221 83% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent:             217 33% 17%;
+    --sidebar-accent-foreground:  210 40% 98%;
+    --sidebar-border:             217 33% 17%;
+    --sidebar-ring:               221 83% 60%;
+  }
+}
+
+/* ─── KEYFRAMES ──────────────────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scale-up {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes pulse-ring {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%       { transform: scale(1.5); opacity: 0; }
+}
+@keyframes accordion-down {
+  from { height: 0; }
+  to   { height: var(--radix-accordion-content-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to   { height: 0; }
+}
+
+/* ─── ANIMATION UTILITIES ────────────────────────────────────────────────── */
+@layer utilities {
+  .animate-fade-up     { animation: fade-up 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+  .animate-fade-in     { animation: fade-in 0.45s ease both; }
+  .animate-slide-right { animation: slide-right 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+  .animate-scale-up    { animation: scale-up 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+  .animate-ping-slow   { animation: pulse-ring 2.4s ease-in-out infinite; }
+
+  /* Staggered animation delays */
+  .delay-75  { animation-delay: 75ms; }
+  .delay-150 { animation-delay: 150ms; }
+  .delay-225 { animation-delay: 225ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-600 { animation-delay: 600ms; }
+
+  /* Blue gradient shimmer text for hero */
+  .text-shimmer {
+    background: linear-gradient(
+      90deg,
+      #2563EB 0%,
+      #60A5FA 40%,
+      #2563EB 80%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 3.5s linear infinite;
+  }
+
+  /* Blue hero gradient */
+  .bg-hero-gradient {
+    background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%);
+  }
+
+  /* Dot-grid background pattern */
+  .bg-dot-grid {
+    background-image: radial-gradient(circle, #2563EB14 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+
+  /* Subtle surface grid */
+  .bg-grid-surface {
+    background-image: linear-gradient(#E2E8F0 1px, transparent 1px),
+                      linear-gradient(90deg, #E2E8F0 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
+
+/* ─── BASE LAYER ─────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline;
+  }
+  ::selection {
+    background: #2563EB33;
+  }
+  :focus-visible {
+    outline: 2px solid #2563EB;
+    outline-offset: 2px;
+  }
+  ::-webkit-scrollbar         { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track   { background: transparent; }
+  ::-webkit-scrollbar-thumb   { background: #E2E8F0; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2563EB55; }
+}
+
+/* ─── COMPONENT LAYER ────────────────────────────────────────────────────── */
+@layer components {
+  /* ── Navigation links ── */
+  .nav-link {
+    @apply relative text-sm font-mono font-medium tracking-wide
+           text-muted-foreground hover:text-foreground transition-colors duration-200;
+  }
+  .nav-link::after {
+    content: '';
+    @apply absolute -bottom-0.5 left-0 h-0.5 w-0 bg-primary transition-all duration-300;
+  }
+  .nav-link:hover::after { @apply w-full; }
+
+  /* ── Primary button (Blue) ── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-primary text-primary-foreground
+           font-mono font-bold text-xs tracking-widest uppercase
+           px-6 py-3 rounded-lg
+           hover:bg-blue-600 hover:shadow-lg hover:shadow-primary/25
+           transition-all duration-200 active:scale-[0.98];
+  }
+
+  /* ── Accent button (Orange CTA) ── */
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2
+           bg-accent text-white
+           font-mono font-bold text-xs tracking-widest uppercase
+           px-6 py-3 rounded-lg
+           hover:bg-orange-500 hover:shadow-lg hover:shadow-accent/25
+           transition-all duration-200 active:scale-[0.98];
+  }
+
+  /* ── Ghost / outline button ── */
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2
+           bg-transparent text-primary
+           font-mono font-bold text-xs tracking-widest uppercase
+           px-6 py-3 rounded-lg border border-primary
+           hover:bg-primary hover:text-white
+           transition-all duration-200 active:scale-[0.98];
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    @apply inline-flex items-center gap-2 font-mono text-[10px]
+           font-bold tracking-[0.2em] uppercase text-muted-foreground;
+  }
+
+  /* ── Premium card ── */
+  .premium-card {
+    @apply bg-card border border-border rounded-xl p-6 shadow-sm
+           hover:shadow-md hover:border-primary/30
+           transition-all duration-300;
+  }
+
+  /* ── Stat card ── */
+  .stat-card {
+    @apply relative bg-white border border-border rounded-xl p-6
+           hover:border-primary/30 hover:shadow-md
+           transition-all duration-300;
+  }
+
+  /* ── Form input with focus state ── */
+  .form-input {
+    @apply w-full bg-white border border-border rounded-lg px-3 py-2.5
+           font-mono text-sm text-foreground
+           placeholder:text-muted-foreground/60
+           focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20
+           transition-all duration-200;
+  }
+
+  /* ── Role badge variants ── */
+  .badge-superadmin {
+    @apply inline-flex items-center gap-1 bg-gradient-to-r from-primary to-blue-700
+           text-white font-mono text-[10px] font-bold tracking-widest uppercase
+           px-2.5 py-0.5 rounded-full;
+  }
+  .badge-admin {
+    @apply inline-flex items-center bg-primary/10 text-primary
+           font-mono text-[10px] font-bold tracking-widest uppercase
+           px-2.5 py-0.5 rounded-full border border-primary/20;
+  }
+  .badge-teacher {
+    @apply inline-flex items-center bg-success/10 text-green-700
+           font-mono text-[10px] font-bold tracking-widest uppercase
+           px-2.5 py-0.5 rounded-full border border-success/20;
+  }
+  .badge-student {
+    @apply inline-flex items-center bg-muted text-muted-foreground
+           font-mono text-[10px] font-bold tracking-widest uppercase
+           px-2.5 py-0.5 rounded-full border border-border;
+  }
+}

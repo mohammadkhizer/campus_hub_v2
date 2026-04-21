@@ -1,0 +1,86 @@
+
+export interface Question {
+  id: string;
+  questionText: string;
+  answerChoices: string[];
+  correctAnswer: string;
+  explanation?: string;
+}
+
+export interface Quiz {
+  id: string;
+  course: string; // Linked to a course
+  title: string;
+  category?: string;
+  description: string;
+  questions: Question[];
+  generationType: 'manual' | 'ai';
+  difficulty: 'easy' | 'medium' | 'hard';
+  timeLimit?: number;
+  isPublished: boolean;
+  password?: string;
+}
+
+export interface QuizAttempt {
+  id: string;
+  quizId: string;
+  studentId: string;
+  studentName?: string;
+  studentEmail?: string;
+  score: number;
+  totalQuestions: number;
+  completedAt: string;
+  status: 'completed' | 'disqualified';
+  answers: Record<string, string>;
+}
+
+export interface Note {
+  id: string;
+  course: string;
+  title: string;
+  description: string;
+  fileUrl: string; // PDF link
+  fileType: 'pdf';
+  createdAt: string;
+}
+
+export interface Assignment {
+  id: string;
+  course: string;
+  title: string;
+  description: string;
+  deadline: string;
+  attachmentUrl?: string; // Optional reference PDF
+  totalMarks: number;
+  createdAt: string;
+}
+
+export interface Submission {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  studentName: string;
+  fileUrl: string; // PDF submission
+  status: 'pending' | 'graded';
+  grade?: string;
+  feedback?: string;
+  submittedAt: string;
+}
+
+export interface Course {
+  id: string;
+  faculty?: string;
+  title: string;
+  code: string;
+  description: string;
+  thumbnail?: string;
+  isPublished: boolean;
+  targetLectures: number;
+  targetAssessments: number;
+  classrooms?: string[];
+  notes?: Note[];
+  quizzes?: Quiz[];
+  assignments?: Assignment[];
+  createdAt: string;
+  updatedAt: string;
+}
