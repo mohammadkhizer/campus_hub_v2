@@ -7,9 +7,16 @@ import path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const MONGODB_URI = process.env.MONGODB_URI;
+const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL;
+const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD;
 
 if (!MONGODB_URI) {
-  console.error('Please define the MONGODB_URI environment variable inside .env');
+  console.error('ERROR: MONGODB_URI is not set in .env');
+  process.exit(1);
+}
+
+if (!SUPERADMIN_EMAIL || !SUPERADMIN_PASSWORD) {
+  console.error('ERROR: SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD must be set in .env');
   process.exit(1);
 }
 
@@ -28,16 +35,16 @@ async function seedSuperAdmin() {
     await mongoose.connect(MONGODB_URI as string);
     console.log('Connected to database.');
 
-    const email = 'superadmin@campushub.com';
+    const email = SUPERADMIN_EMAIL as string;
     const existingAdmin = await User.findOne({ email });
 
     if (existingAdmin) {
-      console.log(`User ${email} already exists.`);
+      console.log(`User ${email} already exists. Nothing to do.`);
       process.exit(0);
     }
 
-    const hashedPassword = await bcrypt.hash('superadmin123', 12);
-    
+    const hashedPassword = await bcrypt.hash(SUPERADMIN_PASSWORD as string, 12);
+
     await User.create({
       firstName: 'Super',
       lastName: 'Admin',
@@ -46,10 +53,7 @@ async function seedSuperAdmin() {
       role: 'superadmin'
     });
 
-    console.log(`Successfully created default super admin!
-Email: ${email}
-Password: superadmin123`);
-    
+    console.log(`Super admin created successfully: ${email}`);
     process.exit(0);
   } catch (error) {
     console.error('Error seeding super admin:', error);

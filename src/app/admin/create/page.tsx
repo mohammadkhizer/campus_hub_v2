@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { generateQuizQuestions } from '@/ai/flows/generate-quiz-questions';
+import { generateQuizQuestionsAction as generateQuizQuestions } from '@/app/actions/ai';
 import { useToast } from '@/hooks/use-toast';
 
 /* ─────────────────────────────── types ────────────────────────────────── */
