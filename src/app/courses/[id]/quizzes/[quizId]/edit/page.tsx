@@ -261,16 +261,40 @@ export default function EditQuizPage() {
                         </div>
                     </div>
                     <div className="space-y-2 pt-2 border-t">
-                        <Label className="flex items-center gap-2">
-                           <AlertCircle className="h-4 w-4 text-amber-500" />
-                           Security Password (Optional)
+                        <Label className="flex items-center gap-2 justify-between">
+                           <div className="flex items-center gap-2">
+                             <AlertCircle className="h-4 w-4 text-amber-500" />
+                             Security Password (Optional)
+                           </div>
+                           {quizDetails.password && (
+                             <Button 
+                               variant="ghost" 
+                               size="sm" 
+                               className="h-6 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                               onClick={() => setQuizDetails({...quizDetails, password: ''})}
+                             >
+                               Remove Password
+                             </Button>
+                           )}
                         </Label>
-                        <Input 
-                          placeholder="e.g. EXAM2024" 
-                          value={quizDetails.password}
-                          onChange={(e) => setQuizDetails({...quizDetails, password: e.target.value})}
-                        />
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Students must enter this to start</p>
+                        <div className="flex gap-2">
+                          <Input 
+                            placeholder="e.g. EXAM2024" 
+                            value={quizDetails.password}
+                            onChange={(e) => setQuizDetails({...quizDetails, password: e.target.value})}
+                            className="flex-1"
+                          />
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              const randomPwd = Math.random().toString(36).slice(-6).toUpperCase();
+                              setQuizDetails({...quizDetails, password: randomPwd});
+                            }}
+                          >
+                            Generate
+                          </Button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Students must enter this to start. Leave blank for no password.</p>
                     </div>
                  </CardContent>
                  <CardFooter className="pt-0">

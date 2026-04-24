@@ -6,6 +6,7 @@ import { Navbar } from '@/components/navbar';
 import { RouteGuard } from '@/components/route-guard';
 import { useAuth } from '@/context/auth-context';
 import { getQuiz, saveAttempt } from '@/lib/store';
+import { checkEnrollment } from '@/app/actions/courses';
 import { Quiz, QuizAttempt } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -43,17 +44,31 @@ function TakeQuizContent({ id }: { id: string }) {
       setLoading(true);
       const data = await getQuiz(id);
       if (data) {
+        
+        // Enrollment Check for Students
+        if (profile?.role === 'student' && data.course) {
+          const isEnrolled = await checkEnrollment(data.course, profile.id);
+          if (!isEnrolled) {
+            router.push('/dashboard');
+            return;
+          }
+        }
+
         // Shuffle questions for each user
         const shuffledQuestions = [...data.questions].sort(() => Math.random() - 0.5);
         setQuiz({ ...data, questions: shuffledQuestions });
         if (data.password) {
           setIsLocked(true);
         }
+      } else {
+        router.push('/dashboard');
       }
       setLoading(false);
     };
-    fetchQuiz();
-  }, [id]);
+    if (profile) {
+      fetchQuiz();
+    }
+  }, [id, profile, router]);
 
   // Activity Monitor (Anti-Cheat)
   useEffect(() => {

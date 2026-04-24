@@ -31,11 +31,11 @@ export function AuthProvider({
   initialProfile?: UserProfile | null;
 }) {
   const [profile, setProfile] = useState<UserProfile | null>(initialProfile);
-  const [isLoading, setIsLoading] = useState(!initialProfile);
+  // If initialProfile is provided by SSR, start in a non-loading state
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchProfile = useCallback(async () => {
-    // If we're hydrating with an initial session, skip the very first loader check
-    if (!profile) setIsLoading(true);
+    setIsLoading(true);
     try {
       const session = await getSessionAction();
       setProfile(session as UserProfile | null);
@@ -45,7 +45,7 @@ export function AuthProvider({
     } finally {
       setIsLoading(false);
     }
-  }, [profile]);
+  }, []); // Empty deps: this function never needs to re-create
 
   useEffect(() => {
     fetchProfile();
