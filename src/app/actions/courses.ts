@@ -131,7 +131,7 @@ export async function createCourse(data: any) {
 
     const course = await CourseModel.create(validated.data);
     
-    logger.info('Course created', { courseId: course._id, adminEmail: session.email });
+    logger.info('Course created', { courseId: course._id, adminEmail: session?.email });
     revalidatePath('/admin');
     revalidatePath('/courses');
     
@@ -184,13 +184,13 @@ export async function saveNote(data: { courseId: string; title: string; descript
     await NoteModel.create({ ...data, course: data.courseId, fileType: 'pdf' });
     revalidatePath(`/courses/${data.courseId}`);
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving note:', error);
-    return { success: false };
+    return { success: false, error: error.message || "Unknown error" };
   }
 }
 
-export async function saveAnnouncement(data: { courseId: string; title: string; content: string; adminId: string }) {
+export async function saveAnnouncement(data: { courseId: string; title: string; content: string; attachmentUrl?: string; adminId: string }) {
   try {
     const session = await getSessionAction();
     if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) {
@@ -206,9 +206,9 @@ export async function saveAnnouncement(data: { courseId: string; title: string; 
     await AnnouncementModel.create({ ...data, course: data.courseId, postedBy: session.id });
     revalidatePath(`/courses/${data.courseId}`);
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving announcement:', error);
-    return { success: false };
+    return { success: false, error: error.message || "Unknown error" };
   }
 }
 
@@ -228,9 +228,9 @@ export async function saveAssignment(data: { courseId: string; title: string; de
     await AssignmentModel.create({ ...data, course: data.courseId });
     revalidatePath(`/courses/${data.courseId}`);
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving assignment:', error);
-    return { success: false };
+    return { success: false, error: error.message || "Unknown error" };
   }
 }
 
@@ -363,5 +363,117 @@ export async function deleteCourse(courseId: string) {
   } catch (error) {
     console.error('Error deleting course:', error);
     return { success: false };
+  }
+}
+
+// ======================= CRUD For Notes =======================
+export async function updateNote(noteId: string, data: { courseId: string; title: string; description?: string; fileUrl?: string }) {
+  try {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) return { success: false, error: "Unauthorized" };
+    
+    await dbConnect();
+    const course = await CourseModel.findById(data.courseId).lean();
+    if (!course || (session.role === 'teacher' && course.faculty?.toString() !== session.id)) return { success: false, error: "Unauthorized" };
+
+    await NoteModel.findByIdAndUpdate(noteId, data);
+    revalidatePath(`/courses/${data.courseId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error updating note:', error);
+    return { success: false, error: error.message || "Failed to update note" };
+  }
+}
+
+export async function deleteNote(noteId: string, courseId: string) {
+  try {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) return { success: false, error: "Unauthorized" };
+    
+    await dbConnect();
+    const course = await CourseModel.findById(courseId).lean();
+    if (!course || (session.role === 'teacher' && course.faculty?.toString() !== session.id)) return { success: false, error: "Unauthorized" };
+
+    await NoteModel.findByIdAndDelete(noteId);
+    revalidatePath(`/courses/${courseId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting note:', error);
+    return { success: false, error: error.message || "Failed to delete note" };
+  }
+}
+
+// ======================= CRUD For Announcements =======================
+export async function updateAnnouncement(annId: string, data: { courseId: string; title: string; content: string; attachmentUrl?: string }) {
+  try {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) return { success: false, error: "Unauthorized" };
+    
+    await dbConnect();
+    const course = await CourseModel.findById(data.courseId).lean();
+    if (!course || (session.role === 'teacher' && course.faculty?.toString() !== session.id)) return { success: false, error: "Unauthorized" };
+
+    await AnnouncementModel.findByIdAndUpdate(annId, data);
+    revalidatePath(`/courses/${data.courseId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error updating announcement:', error);
+    return { success: false, error: error.message || "Failed to update announcement" };
+  }
+}
+
+export async function deleteAnnouncement(annId: string, courseId: string) {
+  try {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) return { success: false, error: "Unauthorized" };
+    
+    await dbConnect();
+    const course = await CourseModel.findById(courseId).lean();
+    if (!course || (session.role === 'teacher' && course.faculty?.toString() !== session.id)) return { success: false, error: "Unauthorized" };
+
+    await AnnouncementModel.findByIdAndDelete(annId);
+    revalidatePath(`/courses/${courseId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting announcement:', error);
+    return { success: false, error: error.message || "Failed to delete announcement" };
+  }
+}
+
+// ======================= CRUD For Assignments =======================
+export async function updateAssignment(assignmentId: string, data: { courseId: string; title: string; description: string; deadline: Date; attachmentUrl?: string }) {
+  try {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) return { success: false, error: "Unauthorized" };
+    
+    await dbConnect();
+    const course = await CourseModel.findById(data.courseId).lean();
+    if (!course || (session.role === 'teacher' && course.faculty?.toString() !== session.id)) return { success: false, error: "Unauthorized" };
+
+    await AssignmentModel.findByIdAndUpdate(assignmentId, data);
+    revalidatePath(`/courses/${data.courseId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error updating assignment:', error);
+    return { success: false, error: error.message || "Failed to update assignment" };
+  }
+}
+
+export async function deleteAssignment(assignmentId: string, courseId: string) {
+  try {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) return { success: false, error: "Unauthorized" };
+    
+    await dbConnect();
+    const course = await CourseModel.findById(courseId).lean();
+    if (!course || (session.role === 'teacher' && course.faculty?.toString() !== session.id)) return { success: false, error: "Unauthorized" };
+
+    await AssignmentModel.findByIdAndDelete(assignmentId);
+    await SubmissionModel.deleteMany({ assignment: assignmentId }); // Cascade delete submissions
+    revalidatePath(`/courses/${courseId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting assignment:', error);
+    return { success: false, error: error.message || "Failed to delete assignment" };
   }
 }

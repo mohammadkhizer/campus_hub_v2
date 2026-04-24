@@ -12,6 +12,7 @@ const QuizSchema = new mongoose.Schema({
   password: { type: String, default: '' },
   questions: [{
     questionText: { type: String, required: true },
+    imageUrl: { type: String }, // For question diagrams/images
     options: [{ type: String, required: true }],
     correctAnswer: { type: String, required: true },
     explanation: { type: String }

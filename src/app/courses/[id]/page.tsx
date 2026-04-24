@@ -74,6 +74,17 @@ export default function CourseDetailPage() {
     loadData();
   }, [id, profile, router, toast]);
 
+  const getDownloadUrl = (url: string) => {
+    if (!url) return '#';
+    if (url.includes('res.cloudinary.com') && (url.includes('/image/upload/') || url.includes('/video/upload/'))) {
+      const parts = url.split('/upload/');
+      if (parts.length === 2) {
+        return `${parts[0]}/upload/fl_attachment/${parts[1]}`;
+      }
+    }
+    return url;
+  };
+
   const handleEnroll = async () => {
     if (!profile) {
       router.push('/login');
@@ -256,7 +267,7 @@ export default function CourseDetailPage() {
                             </div>
                           </div>
                           <Button variant="ghost" size="sm" asChild>
-                            <a href={note.fileUrl} target="_blank" rel="noopener noreferrer">
+                            <a href={getDownloadUrl(note.fileUrl)} target="_blank" rel="noopener noreferrer">
                               <Download className="h-4 w-4 mr-2" /> Download
                             </a>
                           </Button>

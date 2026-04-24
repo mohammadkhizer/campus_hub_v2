@@ -7,10 +7,11 @@ import { RouteGuard } from '@/components/route-guard';
 import { useAuth } from '@/context/auth-context';
 import { 
   getCourseDetail, 
-  saveNote, 
-  saveAssignment, 
-  saveAnnouncement 
+  saveNote, updateNote, deleteNote,
+  saveAssignment, updateAssignment, deleteAssignment,
+  saveAnnouncement, updateAnnouncement, deleteAnnouncement
 } from '@/app/actions/courses';
+import { uploadFileToCloudinary } from '@/app/actions/upload';
 import { serverSaveQuiz } from '@/app/actions/quizzes';
 import { Course } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -61,9 +62,25 @@ function CourseManagePage() {
 
   // Form States
   const [noteForm, setNoteForm] = useState({ title: '', description: '', fileUrl: '' });
-  const [announcementForm, setAnnouncementForm] = useState({ title: '', content: '' });
+  const [noteFile, setNoteFile] = useState<File | null>(null);
+  const [announcementForm, setAnnouncementForm] = useState({ title: '', content: '', attachmentUrl: '' });
+  const [announcementFile, setAnnouncementFile] = useState<File | null>(null);
   const [assignmentForm, setAssignmentForm] = useState({ title: '', description: '', deadline: '', attachmentUrl: '' });
+  const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
   const [quizForm, setQuizForm] = useState({ title: '', description: '', timeLimit: '30' });
+
+  // Edit States
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteForm, setEditNoteForm] = useState({ title: '', description: '', fileUrl: '' });
+  const [editNoteFile, setEditNoteFile] = useState<File | null>(null);
+
+  const [editingAnnId, setEditingAnnId] = useState<string | null>(null);
+  const [editAnnForm, setEditAnnForm] = useState({ title: '', content: '', attachmentUrl: '' });
+  const [editAnnFile, setEditAnnFile] = useState<File | null>(null);
+
+  const [editingAsgId, setEditingAsgId] = useState<string | null>(null);
+  const [editAsgForm, setEditAsgForm] = useState({ title: '', description: '', deadline: '', attachmentUrl: '' });
+  const [editAsgFile, setEditAsgFile] = useState<File | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -82,13 +99,33 @@ function CourseManagePage() {
     loadData();
   }, [id, router, toast]);
 
+  const handleFileUpload = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const result = await uploadFileToCloudinary(formData);
+    if (!result.success || !result.url) throw new Error(result.error || "Upload failed");
+    return result.url;
+  };
+
   const handleSaveNote = async () => {
+    if (!noteFile) {
+      toast({ title: "Error", description: "Please select a file to upload", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
-    const result = await saveNote({ ...noteForm, courseId: id });
-    if (result.success) {
-      toast({ title: "Success", description: "Note uploaded successfully" });
-      setNoteForm({ title: '', description: '', fileUrl: '' });
-      loadData();
+    try {
+      const fileUrl = await handleFileUpload(noteFile);
+      const result = await saveNote({ ...noteForm, fileUrl, courseId: id });
+      if (result.success) {
+        toast({ title: "Success", description: "Note uploaded successfully" });
+        setNoteForm({ title: '', description: '', fileUrl: '' });
+        setNoteFile(null);
+        loadData();
+      } else {
+        toast({ title: "Error", description: result.error || "Failed to save note", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Upload Failed", description: e.message, variant: "destructive" });
     }
     setSubmitting(false);
   };
@@ -96,31 +133,113 @@ function CourseManagePage() {
   const handleSaveAnnouncement = async () => {
     if (!profile) return;
     setSubmitting(true);
-    const result = await saveAnnouncement({ 
-      ...announcementForm, 
-      courseId: id, 
-      adminId: profile.id 
-    });
-    if (result.success) {
-      toast({ title: "Success", description: "Announcement posted" });
-      setAnnouncementForm({ title: '', content: '' });
-      loadData();
+    try {
+      let attachmentUrl = '';
+      if (announcementFile) {
+        attachmentUrl = (await handleFileUpload(announcementFile)) || '';
+      }
+      const result = await saveAnnouncement({ 
+        ...announcementForm, 
+        attachmentUrl,
+        courseId: id, 
+        adminId: profile.id 
+      });
+      if (result.success) {
+        toast({ title: "Success", description: "Announcement posted" });
+        setAnnouncementForm({ title: '', content: '', attachmentUrl: '' });
+        setAnnouncementFile(null);
+        loadData();
+      } else {
+        toast({ title: "Error", description: result.error || "Failed to post announcement", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Upload Failed", description: e.message, variant: "destructive" });
     }
     setSubmitting(false);
   };
 
   const handleSaveAssignment = async () => {
     setSubmitting(true);
-    const result = await saveAssignment({ 
-      ...assignmentForm, 
-      courseId: id, 
-      deadline: new Date(assignmentForm.deadline) 
-    });
-    if (result.success) {
-      toast({ title: "Success", description: "Assignment created" });
-      setAssignmentForm({ title: '', description: '', deadline: '', attachmentUrl: '' });
-      loadData();
+    try {
+      let attachmentUrl = '';
+      if (assignmentFile) {
+        attachmentUrl = (await handleFileUpload(assignmentFile)) || '';
+      }
+      const result = await saveAssignment({ 
+        ...assignmentForm, 
+        attachmentUrl,
+        courseId: id, 
+        deadline: new Date(assignmentForm.deadline) 
+      });
+      if (result.success) {
+        toast({ title: "Success", description: "Assignment created" });
+        setAssignmentForm({ title: '', description: '', deadline: '', attachmentUrl: '' });
+        setAssignmentFile(null);
+        loadData();
+      } else {
+        toast({ title: "Error", description: result.error || "Failed to create assignment", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Upload Failed", description: e.message, variant: "destructive" });
     }
+    setSubmitting(false);
+  };
+
+  // --- CRUD Delete Handlers ---
+  const handleDeleteNote = async (noteId: string) => {
+    if (!confirm("Are you sure you want to delete this material?")) return;
+    const result = await deleteNote(noteId, id);
+    if (result.success) { toast({ title: "Deleted", description: "Material removed" }); loadData(); }
+    else toast({ title: "Error", description: result.error, variant: "destructive" });
+  };
+  const handleDeleteAnnouncement = async (annId: string) => {
+    if (!confirm("Are you sure you want to delete this announcement?")) return;
+    const result = await deleteAnnouncement(annId, id);
+    if (result.success) { toast({ title: "Deleted", description: "Announcement removed" }); loadData(); }
+    else toast({ title: "Error", description: result.error, variant: "destructive" });
+  };
+  const handleDeleteAssignment = async (asgId: string) => {
+    if (!confirm("Are you sure you want to delete this assignment?")) return;
+    const result = await deleteAssignment(asgId, id);
+    if (result.success) { toast({ title: "Deleted", description: "Assignment removed" }); loadData(); }
+    else toast({ title: "Error", description: result.error, variant: "destructive" });
+  };
+
+  // --- CRUD Update Handlers ---
+  const handleUpdateNote = async () => {
+    if (!editingNoteId) return;
+    setSubmitting(true);
+    try {
+      let fileUrl = editNoteForm.fileUrl;
+      if (editNoteFile) fileUrl = await handleFileUpload(editNoteFile);
+      const result = await updateNote(editingNoteId, { ...editNoteForm, fileUrl, courseId: id });
+      if (result.success) { toast({ title: "Updated" }); setEditingNoteId(null); loadData(); }
+      else toast({ title: "Error", description: result.error, variant: "destructive" });
+    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    setSubmitting(false);
+  };
+  const handleUpdateAnnouncement = async () => {
+    if (!editingAnnId) return;
+    setSubmitting(true);
+    try {
+      let attachmentUrl = editAnnForm.attachmentUrl;
+      if (editAnnFile) attachmentUrl = await handleFileUpload(editAnnFile);
+      const result = await updateAnnouncement(editingAnnId, { ...editAnnForm, attachmentUrl, courseId: id });
+      if (result.success) { toast({ title: "Updated" }); setEditingAnnId(null); loadData(); }
+      else toast({ title: "Error", description: result.error, variant: "destructive" });
+    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    setSubmitting(false);
+  };
+  const handleUpdateAssignment = async () => {
+    if (!editingAsgId) return;
+    setSubmitting(true);
+    try {
+      let attachmentUrl = editAsgForm.attachmentUrl;
+      if (editAsgFile) attachmentUrl = await handleFileUpload(editAsgFile);
+      const result = await updateAssignment(editingAsgId, { ...editAsgForm, attachmentUrl, deadline: new Date(editAsgForm.deadline), courseId: id });
+      if (result.success) { toast({ title: "Updated" }); setEditingAsgId(null); loadData(); }
+      else toast({ title: "Error", description: result.error, variant: "destructive" });
+    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
     setSubmitting(false);
   };
 
@@ -263,8 +382,12 @@ function CourseManagePage() {
                           <Textarea value={noteForm.description} onChange={(e) => setNoteForm({...noteForm, description: e.target.value})} placeholder="What's this material about?" />
                         </div>
                         <div className="space-y-2">
-                          <Label>File URL</Label>
+                          <Label>File URL (Optional, or upload below)</Label>
                           <Input value={noteForm.fileUrl} onChange={(e) => setNoteForm({...noteForm, fileUrl: e.target.value})} placeholder="https://drive.google.com/..." />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Upload File (PDF, DOCX, JPG, PNG)</Label>
+                          <Input type="file" onChange={(e) => setNoteFile(e.target.files?.[0] || null)} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
                         </div>
                       </div>
                       <DialogFooter>
@@ -302,8 +425,12 @@ function CourseManagePage() {
                           <Input type="date" value={assignmentForm.deadline} onChange={(e) => setAssignmentForm({...assignmentForm, deadline: e.target.value})} />
                         </div>
                         <div className="space-y-2">
-                          <Label>Reference Link (Optional)</Label>
+                          <Label>Reference Link (Optional, or upload below)</Label>
                           <Input value={assignmentForm.attachmentUrl} onChange={(e) => setAssignmentForm({...assignmentForm, attachmentUrl: e.target.value})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Upload Attachment (PDF, DOCX, JPG, PNG)</Label>
+                          <Input type="file" onChange={(e) => setAssignmentFile(e.target.files?.[0] || null)} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
                         </div>
                       </div>
                       <DialogFooter>
@@ -341,6 +468,10 @@ function CourseManagePage() {
                         <div className="space-y-2">
                           <Label>Announcement Message</Label>
                           <Textarea value={announcementForm.content} onChange={(e) => setAnnouncementForm({...announcementForm, content: e.target.value})} className="min-h-[150px]" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Upload Image/Attachment (Optional)</Label>
+                          <Input type="file" onChange={(e) => setAnnouncementFile(e.target.files?.[0] || null)} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
                         </div>
                       </div>
                       <DialogFooter>
@@ -453,13 +584,30 @@ function CourseManagePage() {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="icon" className="text-muted-foreground"><Settings className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => {
+                              setEditingNoteId(note.id);
+                              setEditNoteForm({ title: note.title, description: note.description, fileUrl: note.fileUrl || '' });
+                              setEditNoteFile(null);
+                            }}><Settings className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteNote(note.id)}><Trash2 className="h-4 w-4" /></Button>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
                     {(!course.notes || course.notes.length === 0) && <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed">No materials yet. Click "Add Material" to start.</div>}
+                    
+                    <Dialog open={!!editingNoteId} onOpenChange={(o) => !o && setEditingNoteId(null)}>
+                      <DialogContent>
+                        <DialogHeader><DialogTitle>Edit Study Material</DialogTitle></DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2"><Label>Title</Label><Input value={editNoteForm.title} onChange={(e) => setEditNoteForm({...editNoteForm, title: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>Description</Label><Textarea value={editNoteForm.description} onChange={(e) => setEditNoteForm({...editNoteForm, description: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>File URL</Label><Input value={editNoteForm.fileUrl} onChange={(e) => setEditNoteForm({...editNoteForm, fileUrl: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>Update File</Label><Input type="file" onChange={(e) => setEditNoteFile(e.target.files?.[0] || null)} /></div>
+                        </div>
+                        <DialogFooter><Button onClick={handleUpdateNote} disabled={submitting}>Save Changes</Button></DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 )}
 
@@ -506,13 +654,35 @@ function CourseManagePage() {
                               <p className="text-sm text-muted-foreground">Due: {new Date(asg.deadline).toLocaleDateString()}</p>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">View Submissions</Button>
+                          <div className="flex gap-2 items-center">
+                            <Button variant="outline" size="sm" asChild>
+                               <Link href={`/courses/${id}/assignments/${asg.id}`}>View Submissions</Link>
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => {
+                              setEditingAsgId(asg.id);
+                              setEditAsgForm({ title: asg.title, description: asg.description, deadline: new Date(asg.deadline).toISOString().split('T')[0], attachmentUrl: asg.attachmentUrl || '' });
+                              setEditAsgFile(null);
+                            }}><Settings className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteAssignment(asg.id)}><Trash2 className="h-4 w-4" /></Button>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
                     {(!course.assignments || course.assignments.length === 0) && <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed">No assignments yet.</div>}
+                    
+                    <Dialog open={!!editingAsgId} onOpenChange={(o) => !o && setEditingAsgId(null)}>
+                      <DialogContent>
+                        <DialogHeader><DialogTitle>Edit Assignment</DialogTitle></DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2"><Label>Title</Label><Input value={editAsgForm.title} onChange={(e) => setEditAsgForm({...editAsgForm, title: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>Description</Label><Textarea value={editAsgForm.description} onChange={(e) => setEditAsgForm({...editAsgForm, description: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>Deadline Date</Label><Input type="date" value={editAsgForm.deadline} onChange={(e) => setEditAsgForm({...editAsgForm, deadline: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>Attachment URL</Label><Input value={editAsgForm.attachmentUrl} onChange={(e) => setEditAsgForm({...editAsgForm, attachmentUrl: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>Update Attachment</Label><Input type="file" onChange={(e) => setEditAsgFile(e.target.files?.[0] || null)} /></div>
+                        </div>
+                        <DialogFooter><Button onClick={handleUpdateAssignment} disabled={submitting}>Save Changes</Button></DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 )}
 
@@ -526,7 +696,14 @@ function CourseManagePage() {
                                <CardTitle>{ann.title}</CardTitle>
                                <CardDescription>{new Date(ann.createdAt).toLocaleString()}</CardDescription>
                              </div>
-                             <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                             <div className="flex gap-1">
+                               <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => {
+                                 setEditingAnnId(ann.id);
+                                 setEditAnnForm({ title: ann.title, content: ann.content, attachmentUrl: ann.attachmentUrl || '' });
+                                 setEditAnnFile(null);
+                               }}><Settings className="h-4 w-4" /></Button>
+                               <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteAnnouncement(ann.id)}><Trash2 className="h-4 w-4" /></Button>
+                             </div>
                            </div>
                         </CardHeader>
                         <CardContent>
@@ -535,6 +712,19 @@ function CourseManagePage() {
                       </Card>
                     ))}
                     {(!course.announcements || course.announcements.length === 0) && <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed">No announcements posted yet.</div>}
+                    
+                    <Dialog open={!!editingAnnId} onOpenChange={(o) => !o && setEditingAnnId(null)}>
+                      <DialogContent>
+                        <DialogHeader><DialogTitle>Edit Announcement</DialogTitle></DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2"><Label>Subject</Label><Input value={editAnnForm.title} onChange={(e) => setEditAnnForm({...editAnnForm, title: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>Message</Label><Textarea value={editAnnForm.content} onChange={(e) => setEditAnnForm({...editAnnForm, content: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>Attachment URL</Label><Input value={editAnnForm.attachmentUrl} onChange={(e) => setEditAnnForm({...editAnnForm, attachmentUrl: e.target.value})} /></div>
+                          <div className="space-y-2"><Label>Update Attachment</Label><Input type="file" onChange={(e) => setEditAnnFile(e.target.files?.[0] || null)} /></div>
+                        </div>
+                        <DialogFooter><Button onClick={handleUpdateAnnouncement} disabled={submitting}>Save Changes</Button></DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 )}
 

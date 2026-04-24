@@ -5,7 +5,7 @@ const NoteSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
   fileUrl: { type: String, required: true },
-  fileType: { type: String, enum: ['pdf'], default: 'pdf' }, // Ensure PDF only
+  fileType: { type: String, default: 'pdf' }, // Changed to allow various file types
 }, { timestamps: true });
 
 if (mongoose.models.Note) {

@@ -23,10 +23,11 @@ import {
   CheckCircle2, Circle, GripVertical, BookOpen, Pencil, X, Check,
   Eye, EyeOff,
 } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { generateQuizQuestionsAction as generateQuizQuestions } from '@/app/actions/ai';
+import { uploadFileToCloudinary } from '@/app/actions/upload';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 /* ─────────────────────────────── types ────────────────────────────────── */
 interface DraftQuestion {
@@ -35,6 +36,8 @@ interface DraftQuestion {
   answerChoices: [string, string, string, string];
   correctAnswer: string;
   explanation: string;
+  imageUrl?: string;
+  imageFile?: File | null;
 }
 
 const BLANK_QUESTION = (): DraftQuestion => ({
@@ -96,6 +99,22 @@ function QuestionEditor({
             className="resize-none text-sm"
             rows={2}
           />
+        </div>
+
+        {/* Image Upload */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Image/Diagram (Optional)
+          </Label>
+          <Input 
+            type="file" 
+            accept="image/png, image/jpeg, image/jpg" 
+            onChange={(e) => onChange({ ...question, imageFile: e.target.files?.[0] || null })} 
+            className="text-sm"
+          />
+          {question.imageUrl && !question.imageFile && (
+             <p className="text-xs text-muted-foreground mt-1">Existing image attached.</p>
+          )}
         </div>
 
         {/* Answer Choices */}
@@ -264,27 +283,44 @@ function CreateQuizContent() {
 
     setSaving(true);
 
-    const quiz: Quiz = {
-      id: Date.now().toString(),
-      course: '',
-      title: title.trim(),
-      description: description.trim(),
-      category: category.trim() || 'General',
-      difficulty,
-      timeLimit: timeLimitMinutes || 0,
-      isPublished: asDraft ? false : publishImmediately,
-      generationType: isAI ? 'ai' : 'manual',
-      ...(!password.trim() ? {} : { password: password.trim() }),
-      questions: questions.map((q) => ({
-        id: q.id,
-        questionText: q.questionText.trim(),
-        answerChoices: q.answerChoices,
-        correctAnswer: q.correctAnswer,
-        ...(!q.explanation.trim() ? {} : { explanation: q.explanation.trim() }),
-      })),
-    };
-
     try {
+      // Handle Image Uploads first
+      const processedQs = await Promise.all(questions.map(async (q) => {
+        let finalImageUrl = q.imageUrl || '';
+        if (q.imageFile) {
+          const formData = new FormData();
+          formData.append('file', q.imageFile);
+          const uploadRes = await uploadFileToCloudinary(formData);
+          if (uploadRes.success && uploadRes.url) {
+            finalImageUrl = uploadRes.url;
+          } else {
+             throw new Error(uploadRes.error || `Failed to upload image for question: ${q.questionText}`);
+          }
+        }
+        return {
+          id: q.id,
+          questionText: q.questionText.trim(),
+          imageUrl: finalImageUrl,
+          answerChoices: q.answerChoices,
+          correctAnswer: q.correctAnswer,
+          ...(!q.explanation.trim() ? {} : { explanation: q.explanation.trim() }),
+        };
+      }));
+
+      const quiz: Quiz = {
+        id: Date.now().toString(),
+        course: '',
+        title: title.trim(),
+        description: description.trim(),
+        category: category.trim() || 'General',
+        difficulty,
+        timeLimit: timeLimitMinutes || 0,
+        isPublished: asDraft ? false : publishImmediately,
+        generationType: isAI ? 'ai' : 'manual',
+        ...(!password.trim() ? {} : { password: password.trim() }),
+        questions: processedQs,
+      };
+
       await saveQuiz(quiz);
       toast({
         title: asDraft ? '💾 Draft Saved' : '🚀 Quiz Published',
