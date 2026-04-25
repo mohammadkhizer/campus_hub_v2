@@ -21,4 +21,8 @@ const QuizSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-export default mongoose.models.Quiz || mongoose.model('Quiz', QuizSchema);
+if (mongoose.models.Quiz) {
+  delete mongoose.models.Quiz;
+}
+
+export default mongoose.model('Quiz', QuizSchema);

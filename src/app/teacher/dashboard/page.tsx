@@ -54,10 +54,10 @@ function TeacherContent() {
         getStudentsAction(),
         import('@/app/actions/quizzes').then(m => m.serverGetQuizzes())
       ]);
-      setCourses(coursesData?.success && coursesData.data ? coursesData.data : []);
-      setClassrooms(classroomData?.success && classroomData.data ? classroomData.data : []);
-      setStudents(studentData?.success && studentData.data ? studentData.data : []);
-      setQuizzes(quizzesData?.success && quizzesData.data ? quizzesData.data : []);
+      setCourses(coursesData);
+      setClassrooms(classroomData);
+      setStudents(studentData);
+      setQuizzes(quizzesData);
     } catch (err) {
       console.error("Load error:", err);
     } finally {

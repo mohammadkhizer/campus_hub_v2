@@ -48,17 +48,14 @@ function EditCourseContent() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [courseRes, allFacultyRes] = await Promise.all([
+      const [course, allFaculty] = await Promise.all([
         getCourseDetail(id),
         getUsersByRoleAction(['teacher', 'subject_coordinator'])
       ]);
       
-      const allFaculty = allFacultyRes?.success && allFacultyRes.data ? allFacultyRes.data : [];
-      
       setFaculty(allFaculty);
 
-      if (courseRes?.success && courseRes.data) {
-        const course = courseRes.data;
+      if (course) {
         setFormData({
           title: course.title,
           code: course.code || '',

@@ -299,13 +299,12 @@ function CreateQuizContent() {
         }
         return {
           id: q.id,
-          type: 'mcq',
           questionText: q.questionText.trim(),
           imageUrl: finalImageUrl,
           answerChoices: q.answerChoices,
           correctAnswer: q.correctAnswer,
           ...(!q.explanation.trim() ? {} : { explanation: q.explanation.trim() }),
-        } as Question;
+        };
       }));
 
       const quiz: Quiz = {

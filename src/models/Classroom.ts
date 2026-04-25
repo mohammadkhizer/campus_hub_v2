@@ -18,4 +18,8 @@ const ClassroomSchema: Schema = new Schema({
   courses: [{ type: Schema.Types.ObjectId, ref: 'Course' }],
 }, { timestamps: true });
 
-export default mongoose.models.Classroom || mongoose.model<IClassroom>('Classroom', ClassroomSchema);
+if (mongoose.models.Classroom) {
+  delete mongoose.models.Classroom;
+}
+
+export default mongoose.model<IClassroom>('Classroom', ClassroomSchema);

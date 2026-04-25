@@ -20,4 +20,8 @@ const ComplaintSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Force clear model from cache to prevent stale issues
-export default mongoose.models.Complaint || mongoose.model('Complaint', ComplaintSchema);
+if (mongoose.models.Complaint) {
+  delete mongoose.models.Complaint;
+}
+
+export default mongoose.model('Complaint', ComplaintSchema);

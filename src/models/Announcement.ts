@@ -8,4 +8,8 @@ const AnnouncementSchema = new mongoose.Schema({
   postedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 }, { timestamps: true });
 
-export default mongoose.models.Announcement || mongoose.model('Announcement', AnnouncementSchema);
+if (mongoose.models.Announcement) {
+  delete mongoose.models.Announcement;
+}
+
+export default mongoose.model('Announcement', AnnouncementSchema);

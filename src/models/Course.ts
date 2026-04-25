@@ -12,4 +12,9 @@ const CourseSchema = new mongoose.Schema({
   isPublished: { type: Boolean, default: false },
 }, { timestamps: true });
 
-export default mongoose.models.Course || mongoose.model('Course', CourseSchema);
+// Force clear model from cache to prevent stale RBAC/schema issues in Next.js dev mode
+if (mongoose.models.Course) {
+  delete mongoose.models.Course;
+}
+
+export default mongoose.model('Course', CourseSchema);

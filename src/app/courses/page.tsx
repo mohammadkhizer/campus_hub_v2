@@ -27,12 +27,8 @@ export default function CoursesPage() {
         const data = await getStudentAccessibleCourses(profile.id);
         setCourses(data);
       } else {
-        const response = await getCourses();
-        if (response?.success && response.data) {
-          setCourses(response.data);
-        } else {
-          setCourses([]);
-        }
+        const data = await getCourses();
+        setCourses(data);
       }
       setLoading(false);
     };

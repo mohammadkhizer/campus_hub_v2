@@ -8,4 +8,8 @@ const NoteSchema = new mongoose.Schema({
   fileType: { type: String, default: 'pdf' }, // Changed to allow various file types
 }, { timestamps: true });
 
-export default mongoose.models.Note || mongoose.model('Note', NoteSchema);
+if (mongoose.models.Note) {
+  delete mongoose.models.Note;
+}
+
+export default mongoose.model('Note', NoteSchema);

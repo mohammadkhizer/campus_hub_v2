@@ -21,31 +21,18 @@ class Logger {
     };
   }
 
-  private async log(entry: LogEntry) {
+  private log(entry: LogEntry) {
     const output = JSON.stringify(entry);
     if (entry.level === 'error' || entry.level === 'security') {
       console.error(output);
-      // Persist critical logs to DB asynchronously
-      this.persistToDB(entry);
     } else if (entry.level === 'warn') {
       console.warn(output);
     } else {
       console.log(output);
     }
-  }
 
-  private async persistToDB(entry: LogEntry) {
-    try {
-      const LogModel = (await import('@/models/Log')).default;
-      await LogModel.create({
-        ...entry,
-        timestamp: new Date(entry.timestamp)
-      });
-    } catch (e) {
-      // Fail silently to prevent logging errors from crashing the app
-    }
+    // In production, you would send this to a service like Axiom, Datadog, or a simple file.
   }
-
 
   info(message: string, context?: Record<string, any>) {
     this.log(this.format('info', message, context));

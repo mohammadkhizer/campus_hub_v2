@@ -8,13 +8,11 @@ import { serverGetAnalyticsData } from '@/app/actions/analytics';
 // -- QUIZZES VIA MONGODB -- //
 
 export const getQuizzes = async (adminId?: string): Promise<Quiz[]> => {
-  const res = await serverGetQuizzes(adminId);
-  return res.success && res.data ? res.data : [];
+  return await serverGetQuizzes(adminId);
 };
 
 export const getQuiz = async (id: string): Promise<Quiz | null> => {
-  const res = await serverGetQuiz(id);
-  return res.success && res.data ? res.data : null;
+  return await serverGetQuiz(id);
 };
 
 export const saveQuiz = async (quiz: Quiz) => {
@@ -26,18 +24,15 @@ export const deleteQuiz = async (adminId: string, id: string, wasPublished: bool
 };
 
 export const getAttempts = async (studentId: string): Promise<QuizAttempt[]> => {
-  const res = await serverGetAttempts(studentId);
-  return res.success && res.data ? res.data : [];
+  return await serverGetAttempts(studentId);
 };
 
 export const getAllAttempts = async (): Promise<QuizAttempt[]> => {
-  const res = await serverGetAllAttempts();
-  return res.success && res.data ? res.data : [];
+  return await serverGetAllAttempts();
 };
 
 export const getQuizAttempts = async (quizId: string): Promise<QuizAttempt[]> => {
-  const res = await serverGetQuizAttempts(quizId);
-  return res.success && res.data ? res.data : [];
+  return await serverGetQuizAttempts(quizId);
 };
 
 export const deleteAttempt = async (attemptId: string) => {

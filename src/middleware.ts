@@ -6,10 +6,11 @@ export async function middleware(request: NextRequest) {
   // 1. Apply Security Headers
   const response = NextResponse.next();
   
-  // Content Security Policy (CSP) - Hardened production version
+  // Content Security Policy (CSP) - Basic hardened version
+  // Adjust this based on your external scripts/styles needs
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval';
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https://placehold.co https://images.unsplash.com https://picsum.photos;
     font-src 'self' data:;
@@ -27,17 +28,13 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocations=()');
 
+  /*
   // 2. Global Rate Limiting for API and Actions
   if (request.nextUrl.pathname.startsWith('/api') || request.headers.get('next-action')) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
                (request as any).ip || 
                'anonymous';
-    
-    // We import checkRateLimit dynamically to avoid issues with Edge runtime if it's not compatible
-    // But checkRateLimit uses @upstash/ratelimit which IS edge compatible.
-    const { checkRateLimit } = await import('./lib/rate-limit');
     const rateLimit = await checkRateLimit({ limit: 50, windowMs: 60 * 1000 }, ip); // 50 req/min
-    
     if (!rateLimit.success) {
       return new NextResponse('Too Many Requests', { 
         status: 429,
@@ -47,7 +44,7 @@ export async function middleware(request: NextRequest) {
       });
     }
   }
-
+  */
 
   return response;
 }

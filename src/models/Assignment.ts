@@ -9,4 +9,8 @@ const AssignmentSchema = new mongoose.Schema({
   totalMarks: { type: Number, default: 100 },
 }, { timestamps: true });
 
-export default mongoose.models.Assignment || mongoose.model('Assignment', AssignmentSchema);
+if (mongoose.models.Assignment) {
+  delete mongoose.models.Assignment;
+}
+
+export default mongoose.model('Assignment', AssignmentSchema);
