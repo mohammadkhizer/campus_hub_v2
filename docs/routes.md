@@ -1,67 +1,39 @@
-# Role-Based Route & Navigation Directory
+# Routing and Navigation Specification
 
-This document outlines the accessible pages and navigation items for each user role within the Campus Hub platform. The navigation bar dynamically filters these items based on the user's authenticated role.
+## 1. Overview
+The Campus Hub V2 navigation system is dynamically generated based on the authenticated user's role. Routing is enforced via Next.js Middleware and client-side route guards to ensure data isolation.
 
----
+## 2. Route Directory by Role
 
-## 🏗️ Technical Implementation
-Navigation is controlled via a centralized configuration:
-- **Config File**: `src/config/navigation.ts`
-- **Component**: `src/components/navbar.tsx`
+### 2.1 Super Admin Routes
+- `/superadmin/dashboard`: Primary portal for system-wide health and analytics.
+- `/superadmin/logs`: Access to security audits and system error logs.
+- `/superadmin/feedback`: Moderation panel for public testimonials.
+- `/admin/dashboard`: Overriding access to institutional management.
 
----
+### 2.2 Administrator Routes
+- `/admin/dashboard`: Operational hub for managing classrooms and faculty.
+- `/admin/leaderboard`: Institutional performance analytics.
+- `/admin/complaints`: Grievance management and resolution system.
 
-## 👑 Super Admin
-The Super Admin has unrestricted access to the entire platform for system-wide configuration and oversight.
+### 2.3 Teacher Routes
+- `/teacher/dashboard`: Management of assigned courses and classrooms.
+- `/courses/create`: Entry point for AI-assisted and manual course establishment.
+- `/courses/[id]/manage`: Control center for specific course content and participants.
 
-**Navbar Items:**
-- **Dashboard**: `/superadmin/dashboard` (System health, Global stats)
-- **Faculty Registry**: `/admin/dashboard` (Control over all staff and coordinators)
-- **System Logs**: `/superadmin/logs` (Security and audit trails)
-- **Analytics**: `/superadmin/analytics` (Institutional performance data)
-- **Grievances**: `/admin/complaints` (Review and resolve student concerns)
+### 2.4 Student Routes
+- `/student/dashboard`: Personal learning hub and course overview.
+- `/courses`: Repository of enrolled course materials and notes.
+- `/quizzes`: Access to active assessments.
+- `/student/complaints`: Interface for registering academic or technical concerns.
+- `/profile`: Self-service account management.
 
----
+## 3. Security Implementation
 
-## 🛡️ Administrator (Institutional Admin)
-Responsible for day-to-day operations, faculty management, and classroom logistics.
+### 3.1 Authorization Layer
+- **Middleware:** Intercepts path segments to verify role permissions before rendering.
+- **Server Action Protection:** Every data mutation within a route is protected by a server-side check. If a user's role does not match the required permission for the action, the request is terminated with a `403 Forbidden` status.
 
-**Navbar Items:**
-- **Dashboard**: `/admin/dashboard` (Operational hub)
-- **Classrooms**: `/admin/dashboard` (Manage Classrooms tab: Registry, Students, Mapping)
-- **Faculty Registry**: `/admin/dashboard` (Faculty tab: Onboard and manage Teachers)
-- **Leaderboard**: `/admin/leaderboard` (Student performance tracking)
-- **Grievances**: `/admin/complaints` (Review and resolve student concerns)
-
----
-
-## 👨‍🏫 Teacher (Subject Coordinator)
-Focuses on curriculum delivery, classroom management, and student onboarding.
-
-**Navbar Items:**
-- **Dashboard**: `/teacher/dashboard` (Academic overview)
-- **My Courses**: `/teacher/dashboard` (Courses tab: Manage curriculum and publishing)
-- **Classrooms**: `/teacher/dashboard` (Classrooms tab: View assigned groups)
-- **Students**: `/teacher/dashboard` (Students tab: **Onboard Students**, Student Registry)
-
----
-
-## 🎓 Student
-The end-user focusing on learning, participation, and progress tracking.
-
-**Navbar Items:**
-- **Home**: `/` (Landing page/General info)
-- **Dashboard**: `/student/dashboard` (Personal learning hub)
-- **Classroom**: `/student/dashboard` (View enrolled classrooms)
-- **Course**: `/courses` (Browse and access course materials)
-- **Quiz**: `/quizzes` (Take assigned assessments)
-- **Complaint Box**: `/student/complaints` (Register and track concerns)
-- **Profile**: `/profile` (Manage personal account details)
-
----
-
-## 🔒 Route Security
-Access is enforced at multiple levels:
-1. **Middleware/RouteGuard**: Prevents direct URL access to unauthorized directories (e.g., a student trying to visit `/admin/*`).
-2. **UI Filtering**: The Navbar hides unauthorized links to simplify the interface.
-3. **Server Actions**: RBAC (Role-Based Access Control) is checked inside every sensitive action (e.g., `deleteClassroom` checks if user is an `administrator`).
+### 3.2 Navigation Logic
+- **Dynamic Filtering:** The `Navbar` component filters navigation links based on the `profile.role` property provided by the `AuthContext`.
+- **Route Guards:** The `RouteGuard` component wraps sensitive pages to prevent unauthenticated access or role-mismatch errors during client-side navigation.

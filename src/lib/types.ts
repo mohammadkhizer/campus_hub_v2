@@ -1,11 +1,11 @@
-export type QuestionType = 'mcq' | 'fill-in-the-blanks' | 'short-answer' | 'long-answer';
+export type QuestionType = 'mcq' | 'fill-in-the-blanks';
 
 export interface Question {
   id: string;
   type: QuestionType;
   questionText: string;
   answerChoices?: string[]; // Only for MCQ
-  correctAnswer?: string; // Optional for long-answer
+  correctAnswer?: string; 
   explanation?: string;
   points?: number;
 }

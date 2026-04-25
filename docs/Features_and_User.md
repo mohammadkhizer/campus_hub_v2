@@ -1,72 +1,56 @@
-# Features and User Roles
+# Functional Specification: Roles and Features
 
-This document outlines the different user roles within Campus Hub and the features/pages accessible to each.
+## 1. Overview
+Campus Hub V2 implements a 4-tier Role-Based Access Control (RBAC) hierarchy. This document defines the feature availability and functional responsibilities for each user role.
 
-## 4-Tier RBAC Hierarchy
+## 2. Role Hierarchy and Permissions
 
-Campus Hub implements a robust Role-Based Access Control (RBAC) system with four distinct tiers.
+### 2.1 Super Admin
+The Super Admin is responsible for global platform governance, system health, and institutional oversight.
+- **System Governance:** Full control over all platform entities (Users, Courses, Classrooms).
+- **Security Monitoring:** Access to global audit logs and security breach reports.
+- **Analytics:** High-level institutional growth metrics and performance trends.
+- **Moderation:** Management of student testimonials and feedback for public display.
+- **Infrastructure:** Oversight of database failover status and system configuration.
 
----
+### 2.2 Administrator
+Administrators manage the day-to-day operations of specific departments or institutions.
+- **Staff Management:** Onboarding and management of Teacher accounts.
+- **Classroom Logistics:** Mapping students and teachers to academic classrooms.
+- **Performance Auditing:** Access to institutional leaderboards and detailed student performance data.
+- **Conflict Resolution:** Review and resolution of student-filed grievances (Complaints).
 
-### 1. Super Admin
-**Target:** System Owners and Platform Managers
-- **Primary Access:** `/superadmin/dashboard`
-- **Key Features:**
-  - **Global Governance:** Full control over the entire platform ecosystem.
-  - **Enterprise RBAC:** Manage high-level permissions and system-wide roles.
-  - **System Metrics:** View real-time analytics on system performance and uptime.
-  - **Database Management:** Oversee multi-cluster database resilience and failover settings.
+### 2.3 Teacher
+Teachers are the primary content architects and instructional leads.
+- **Course Management:** Creation and maintenance of course materials and syllabus.
+- **Assessment Creation:** Manual or AI-assisted generation of timed quizzes.
+- **Instructional Support:** Uploading study notes (PDFs) and posting course-wide announcements.
+- **Evaluation:** Reviewing assignment submissions and providing academic feedback.
 
-### 2. Administrator
-**Target:** Institutional Administrators and Department Heads
-- **Primary Access:** `/admin/dashboard`
-- **Key Features:**
-  - **Institutional Dashboard:** Overview of all academic activities within their jurisdiction.
-  - **Classroom Management:** Manage all classrooms under `/admin/classrooms`.
-  - **User Management:** Oversee teacher and student accounts.
-  - **Content Oversight:** Ability to view and manage all courses and quizzes.
-  - **Leaderboard Analytics:** Monitor institutional performance via `/admin/leaderboard`.
-  - **Creation Tools:** Access to `/admin/create` for high-level entity creation.
+### 2.4 Student
+Students are the primary end-users engaged in the learning and assessment process.
+- **Dashboard:** Central hub for viewing active courses, upcoming quizzes, and academic progress.
+- **Assessments:** Participation in secure, timed quizzes with server-side integrity monitoring (timing, device tracking, and disqualification triggers).
+- **Assignments:** Uploading deliverables and tracking grading status.
+- **Engagement:** Submission of feedback and registration of grievances.
 
-### 3. Teacher
-**Target:** Educators and Instructors
-- **Primary Access:** `/teacher/dashboard`
-- **Key Features:**
-  - **Course Management:**
-    - Create new courses via `/courses/create`.
-    - Edit existing courses via `/courses/edit/[id]`.
-    - Manage course participants and materials via `/courses/[id]/manage`.
-  - **Assessment Engine:**
-    - AI-powered quiz generation.
-    - Create quizzes via `/courses/[id]/quizzes/create`.
-    - Edit quizzes via `/courses/[id]/quizzes/[quizId]/edit`.
-    - Automated grading and deep performance analytics.
-  - **Engagement:** Access to leaderboard data to track student progress.
 
-### 4. Student
-**Target:** Learners and Participants
-- **Primary Access:** `/student/dashboard`
-- **Key Features:**
-  - **Personalized Dashboard:** A central hub for their enrolled courses and upcoming tasks.
-  - **Classroom View:** Access their specific classrooms via `/student/dashboard` (integrated).
-  - **Learning Journey:**
-    - View and access course materials.
-    - Participate in assessments and quizzes via `/quizzes/[id]`.
-  - **Feedback Loops:** Instant feedback on quiz submissions and academic performance.
-  - **Profile Management:** Manage personal settings and academic profile.
+## 3. Feature Access Matrix
 
----
-
-## Navigation Summary
-
-| Page Path | Super Admin | Administrator | Teacher | Student |
+| Feature | Super Admin | Admin | Teacher | Student |
 | :--- | :---: | :---: | :---: | :---: |
-| `/superadmin/dashboard` | ✅ | ❌ | ❌ | ❌ |
-| `/admin/dashboard` | ❌* | ✅ | ❌ | ❌ |
-| `/teacher/dashboard` | ❌* | ❌ | ✅ | ❌ |
-| `/student/dashboard` | ❌* | ❌ | ❌ | ✅ |
-| `/courses/create` | ❌ | ✅ | ✅ | ❌ |
-| `/quizzes/[id]` | ❌ | ❌ | ❌ | ✅ |
-| `/profile` | ✅ | ✅ | ✅ | ✅ |
+| Global Analytics | Full | Limited | No | No |
+| User Role Modification | Yes | No | No | No |
+| Course Creation | No | Yes | Yes | No |
+| AI Quiz Generation | No | Yes | Yes | No |
+| Assignment Submission | No | No | No | Yes |
+| Grievance Resolution | Yes | Yes | No | No |
+| System Log Access | Yes | No | No | No |
+| Profile Management | Yes | Yes | Yes | Yes |
 
-*\*Note: Users are typically redirected to their specific dashboard based on their role upon login.*
+## 4. Workflow Integrity
+- **Redirection Logic:** Upon authentication, users are automatically routed to their respective dashboards (`/superadmin`, `/admin`, `/teacher`, or `/student`) based on their role metadata.
+- **Session Security:** Authorization tokens are validated server-side for every sensitive action.
+- **Credential Policy:** Strict password requirements (8+ chars, uppercase, numeric) are enforced at the account creation level.
+- **Session Revocation:** Multi-device session invalidation is triggered automatically upon password updates to protect against compromised credentials.
+

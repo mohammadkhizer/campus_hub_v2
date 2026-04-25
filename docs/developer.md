@@ -1,45 +1,47 @@
-# Developer Documentation
+# Developer Standards and Onboarding
 
-Important information for developers working on the Campus Hub project.
+## 1. Development Environment
+To maintain consistency across the development team, all contributors must adhere to the following environment specifications.
 
-## Tech Stack
+### 1.1 Prerequisites
+- **Runtime:** Node.js v20.x or higher.
+- **Package Manager:** npm v10.x or higher.
+- **Database:** Access to a MongoDB Atlas cluster (Primary and Backup).
+- **External APIs:** Valid API keys for Google Gemini and Cloudinary.
 
-- **Framework:** [Next.js](https://nextjs.org/) (App Router)
-- **Language:** [TypeScript](https://www.typescriptlang.org/)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **Icons:** [Lucide React](https://lucide.dev/)
-- **Database:** MongoDB
-- **File Storage:** Cloudinary (See [CLOUDINARY.md](./CLOUDINARY.md))
-- **Authentication:** JWT (JSON Web Tokens) with HttpOnly Cookie protection
+### 1.2 Configuration
+The application utilizes a `.env` file for local development. Reference `.env.example` for the required keys. Strict runtime validation is performed via `src/lib/env.ts`.
 
-## Core Architecture
+## 2. Engineering Standards
 
-### 1. Authentication & RBAC
-The system uses a 4-tier Role-Based Access Control system.
-- **Context:** `src/context/auth-context.tsx` handles the global auth state.
-- **Protection:** `src/components/route-guard.tsx` is used to wrap pages and restrict access based on roles.
-- **Server Actions:** `src/app/actions/auth.ts` contains the logic for login, logout, and session retrieval.
+### 2.1 Type Safety
+- All new features must be implemented in **TypeScript**.
+- Avoid the use of `any`. Utilize interfaces defined in `src/lib/types.ts` or local schema-driven types.
+- Input validation must be performed using **Zod** within all Server Actions.
 
-### 2. Security Middleware
-Located at `src/middleware.ts`, it handles:
-- **Security Headers:** CSP, HSTS, X-Frame-Options, X-Content-Type-Options, etc.
-- **Rate Limiting:** (Optional/Configurable) protects API routes and server actions.
+### 2.2 Data Fetching and Mutation
+- **Safe Actions:** Use the `safeAction()` wrapper from `src/lib/actions.ts` for all Server Actions. This ensures consistent error handling, structured logging, and input validation.
+- **Serialization (DTOs):** Avoid `JSON.parse(JSON.stringify(doc))`. Use the `toDTO()` or `fromLean()` utilities from `src/lib/dto.ts` for high-performance data serialization.
+- **Caching:** Leverage Next.js `revalidatePath` and `revalidateTag` to manage cache invalidation after data mutations.
+- **Mongoose:** Always use the `dbConnect()` utility from `src/lib/mongoose.ts` to ensure connection caching. Do not manually clear `mongoose.models` in model files as the registration is now centralized.
 
-### 3. Project Structure
-- `src/app`: Contains all pages and layouts (Next.js App Router).
-- `src/components`: Reusable UI components.
-- `src/context`: React Context providers (Auth, etc.).
-- `src/lib`: Utility functions and core logic.
-- `src/models`: Database schemas and models.
-- `docs/`: Project documentation and blueprints.
 
-## Important Files
-- `next.config.ts`: Next.js configuration.
-- `tailwind.config.ts`: Custom theme, colors, and animations.
-- `.env`: Environment variables (Template should be followed).
+### 2.3 Security Practices
+- **Role Verification:** Always perform server-side role checks within Server Actions using `getSessionAction`.
+- **Persistent Logging:** Use `logger.security()` or `logger.error()` for critical events to ensure they are archived in the MongoDB `logs` collection.
+- **Credential Integrity:** Enforce the global password policy (8+ chars, uppercase, numeric) in all onboarding workflows.
 
-## Development Guidelines
-- **Aesthetics:** Follow the "Next-Gen" design system (shimmers, glassmorphism, premium cards).
-- **Type Safety:** Ensure all props and data structures are properly typed.
-- **Performance:** Utilize Next.js Server Components where possible for better performance.
-- **Security:** Never expose sensitive logic on the client side; use Server Actions or protected API routes.
+## 3. Workflow and CI/CD
+
+### 3.1 Code Reviews
+- All Pull Requests must pass automated linting and type-checking.
+
+### 3.2 Testing Strategy
+- **Manual Verification:** Critical paths (Auth, Quiz, Upload) must be manually verified in a staging environment.
+- **Type Safety:** Automated `tsc --noEmit` is used for build-time validation.
+
+## 4. Documentation
+- Update the **SDD** for any architectural changes.
+- Ensure all new Mongoose models are documented.
+- Maintain the **Functional Specification** when adding or modifying user permissions.
+

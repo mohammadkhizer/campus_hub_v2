@@ -1,35 +1,53 @@
 /**
- * @fileOverview A simple rate limiting utility for Next.js Server Actions.
+ * @fileOverview A persistent rate limiting utility for Next.js Server Actions.
  *
- * In a serverless environment (like Vercel), a standard in-memory
- * variable will not persist across different instances. For production use,
- * it is recommended to use Redis (e.g., Upstash) or a database (e.g., MongoDB).
- *
- * This implementation uses an in-memory approach for demonstration/development
- * and can be easily extended to use a persistent store.
+ * This implementation uses Upstash Redis to ensure rate limits are enforced
+ * across multiple serverless instances (e.g., on Vercel). It provides a 
+ * sliding window algorithm and falls back to a permissive state if Redis
+ * credentials are missing, ensuring high availability.
  */
 
+
 import { headers } from 'next/headers';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+import { logger } from './logger';
+import { env } from './env';
 
-type RateLimitEntry = {
-  count: number;
-  resetTime: number;
-};
+// Initialize Redis client
+// Note: UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be in .env
+const redis = (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) 
+  ? new Redis({
+      url: env.UPSTASH_REDIS_REST_URL,
+      token: env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
 
-// Internal cache for rate limiting (in-memory)
-// Note: This only works for a single instance.
-const rateLimitCache = new Map<string, RateLimitEntry>();
+/**
+ * Creates a rate limiter instance with the given configuration.
+ */
+function createLimiter(limit: number, windowMs: number) {
+  if (!redis) {
+    logger.warn('RATE_LIMIT: Redis not configured. Falling back to permissive mode.');
+    return null;
+  }
+
+  return new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+    analytics: true,
+    prefix: '@campus-hub/ratelimit',
+  });
+}
 
 interface RateLimitConfig {
-  limit: number;      // Max number of requests
-  windowMs: number;  // Time window in milliseconds
+  limit: number;      
+  windowMs: number;  
 }
 
 /**
  * Checks if a request should be rate-limited.
- * @param config The rate limit configuration.
- * @param identifier Optional identifier (e.g., IP address). If not provided, it tries to get it from headers.
- * @returns {Promise<{ success: boolean; limit: number; remaining: number; reset: number }>}
+ * Uses Upstash Redis for persistent state across serverless instances.
  */
 export async function checkRateLimit(
   config: RateLimitConfig = { limit: 10, windowMs: 60 * 1000 },
@@ -40,43 +58,39 @@ export async function checkRateLimit(
   if (!ip) {
     try {
       const headersList = await headers();
-      ip = headersList.get('x-forwarded-for') || 'anonymous';
+      ip = headersList.get('x-forwarded-for')?.split(',')[0] || 'anonymous';
     } catch (e) {
-      // If headers() is called in Middleware, it will throw.
-      // In that case, the caller MUST provide an identifier.
       ip = 'anonymous-fallback';
     }
   }
 
-  const now = Date.now();
-  let entry = rateLimitCache.get(ip);
-
-  // If no entry exists or the window has expired, reset
-  if (!entry || now > entry.resetTime) {
-    entry = {
-      count: 0,
-      resetTime: now + config.windowMs,
-    };
+  const limiter = createLimiter(config.limit, config.windowMs);
+  
+  if (!limiter) {
+    // Permissive fallback if Redis is missing
+    return { success: true, limit: config.limit, remaining: config.limit, reset: 0 };
   }
 
-  // Check if limit exceeded
-  if (entry.count >= config.limit) {
+  try {
+    const { success, limit, remaining, reset } = await limiter.limit(ip);
+    
+    // Convert reset timestamp to seconds from now
+    const resetSeconds = Math.ceil((reset - Date.now()) / 1000);
+
+    if (!success) {
+      logger.security('Rate limit exceeded', { ip, limit, remaining });
+    }
+
     return {
-      success: false,
-      limit: config.limit,
-      remaining: 0,
-      reset: Math.ceil((entry.resetTime - now) / 1000),
+      success,
+      limit,
+      remaining,
+      reset: resetSeconds,
     };
+  } catch (error: any) {
+    logger.error('Rate limit execution error', { error: error.message });
+    // Fail safe (allow) on infrastructure errors to prevent blocking users
+    return { success: true, limit: config.limit, remaining: 1, reset: 0 };
   }
-
-  // Increment count
-  entry.count += 1;
-  rateLimitCache.set(ip, entry);
-
-  return {
-    success: true,
-    limit: config.limit,
-    remaining: config.limit - entry.count,
-    reset: Math.ceil((entry.resetTime - now) / 1000),
-  };
 }
+

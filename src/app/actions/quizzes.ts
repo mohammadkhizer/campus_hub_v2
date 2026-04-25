@@ -6,32 +6,29 @@ import AttemptModel from '@/models/Attempt';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { getSessionAction } from '@/app/actions/auth';
 import CourseModel from '@/models/Course';
+import { safeAction } from '@/lib/actions';
+import { fromLean, toDTO } from '@/lib/dto';
+import { headers } from 'next/headers';
+import { z } from 'zod';
+
 
 export async function serverGetQuizzes(adminId?: string) {
-  try {
+  return safeAction(async () => {
     await dbConnect();
     let query = adminId ? { adminId } : { isPublished: true };
     const quizzes = await QuizModel.find(query).sort({ createdAt: -1 }).lean();
     
-    // Deep serialize to handle nested ObjectIds (especially in questions array)
-    return JSON.parse(JSON.stringify(quizzes)).map((q: any) => ({
+    return fromLean<any[]>(quizzes).map((q: any) => ({
       ...q,
-      id: q._id.toString(),
       questions: (q.questions || []).map((question: any) => ({
+        ...question,
         id: question._id ? question._id.toString() : (question.id || Date.now().toString()),
-        type: question.type || 'mcq',
-        questionText: question.questionText || '',
         answerChoices: question.options || question.answerChoices || [],
-        correctAnswer: question.correctAnswer || '',
-        explanation: question.explanation || '',
-        points: question.points || 1
       }))
     }));
-  } catch (error) {
-    console.error('Error fetching quizzes:', error);
-    return [];
-  }
+  }, adminId, { name: 'serverGetQuizzes' });
 }
+
 
 export async function serverGetQuiz(id: string) {
   try {
@@ -129,22 +126,84 @@ export async function serverDeleteQuiz(id: string) {
   }
 }
 
-export async function serverSaveAttempt(attempt: any) {
-  try {
+export async function serverStartAttempt(quizId: string) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!session) throw new Error("Unauthorized");
+
     await dbConnect();
-    const { id, ...data } = attempt;
-    await AttemptModel.create({
-      ...data,
-      quiz: data.quizId,
-      student: data.studentId,
-      completedAt: new Date(data.completedAt)
+    const quiz = await QuizModel.findById(quizId).lean();
+    if (!quiz) throw new Error("Quiz not found");
+
+    const headersList = await headers();
+    
+    const attempt = await AttemptModel.create({
+      quiz: quizId,
+      student: session.id,
+      score: 0,
+      totalQuestions: quiz.questions?.length || 0,
+      startTime: new Date(),
+      status: 'pending_review',
+      deviceInfo: {
+        userAgent: headersList.get('user-agent'),
+        ip: headersList.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+      }
     });
-    return { success: true };
-  } catch (error) {
-    console.error('Error saving attempt:', error);
-    throw error;
-  }
+
+    return attempt._id.toString();
+  }, quizId, { name: 'serverStartAttempt' });
 }
+
+export async function serverSaveAttempt(attempt: any) {
+  return safeAction(async () => {
+    await dbConnect();
+    
+    // 1. Fetch the pending attempt to verify timing
+    const existingAttempt = await AttemptModel.findOne({
+      quiz: attempt.quizId,
+      student: attempt.studentId,
+      status: 'pending_review'
+    }).sort({ startTime: -1 });
+
+    let duration = 0;
+    if (existingAttempt && existingAttempt.startTime) {
+      duration = Math.floor((Date.now() - new Date(existingAttempt.startTime).getTime()) / 1000);
+      
+      // 2. Cross-verify with Quiz time limit (if exists)
+      const quiz = await QuizModel.findById(attempt.quizId).select('timeLimit').lean();
+      if (quiz && quiz.timeLimit > 0) {
+        const limitSeconds = quiz.timeLimit * 60;
+        if (duration > limitSeconds + 60) { // 60s grace period
+           // Disqualify or flag
+           console.warn(`Attempt flagged for overtime: ${duration}s vs ${limitSeconds}s`);
+        }
+      }
+    }
+
+    if (existingAttempt) {
+      existingAttempt.score = attempt.score;
+      existingAttempt.totalQuestions = attempt.totalQuestions;
+      existingAttempt.completedAt = new Date();
+      existingAttempt.duration = duration;
+      existingAttempt.status = 'completed';
+      existingAttempt.answers = attempt.answers;
+      await existingAttempt.save();
+      return { success: true, id: existingAttempt._id.toString() };
+    } else {
+      // Fallback for old system or missing start
+      const newAttempt = await AttemptModel.create({
+        ...attempt,
+        quiz: attempt.quizId,
+        student: attempt.studentId,
+        completedAt: new Date(),
+        status: 'completed',
+        duration: 0 // Unknown
+      });
+      return { success: true, id: newAttempt._id.toString() };
+    }
+  }, attempt, { name: 'serverSaveAttempt' });
+}
+
 
 export async function serverGetAttempts(studentId: string) {
   try {

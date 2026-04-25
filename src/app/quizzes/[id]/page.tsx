@@ -291,8 +291,12 @@ function TakeQuizContent({ id }: { id: string }) {
         if (userAnswer === correctAnswer) {
           correctCount += (q.points || 1);
         }
-      } else {
-        hasManualGrading = true;
+      } else if (q.type === 'fill-in-the-blanks') {
+        const userAnswer = (answers[q.id] || "").trim().toLowerCase();
+        const correctAnswer = (q.correctAnswer || "").trim().toLowerCase();
+        if (userAnswer === correctAnswer) {
+          correctCount += (q.points || 1);
+        }
       }
     });
 
@@ -306,7 +310,7 @@ function TakeQuizContent({ id }: { id: string }) {
         score: correctCount,
         totalQuestions: quiz.questions.length,
         completedAt: new Date().toISOString(),
-        status: hasManualGrading ? 'pending_review' : 'completed',
+        status: 'completed',
         answers,
       };
 
@@ -335,7 +339,7 @@ function TakeQuizContent({ id }: { id: string }) {
               </div>
             </div>
             <h1 className="text-4xl font-headline font-bold text-primary mb-2">Quiz Submitted!</h1>
-            {quiz.questions.some(q => q.type !== 'mcq') ? (
+            {false ? (
               <div className="space-y-4">
                 <p className="text-muted-foreground mb-6">Your answers have been saved and sent to your teacher for manual grading.</p>
                 <div className="p-6 bg-amber-50 rounded-xl border border-amber-200 inline-block">
@@ -390,27 +394,22 @@ function TakeQuizContent({ id }: { id: string }) {
                       {choice === answers[q.id] && choice !== q.correctAnswer && <XCircle className="h-5 w-5 text-red-600" />}
                     </div>
                   ))}
-                  {(q.type === 'fill-in-the-blanks' || q.type === 'short-answer' || q.type === 'long-answer') && (
+                  {q.type === 'fill-in-the-blanks' && (
                     <div className="space-y-2">
-                      <div className={`p-3 rounded-lg border ${(q.type === 'fill-in-the-blanks' && answers[q.id]?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase())
+                      <div className={`p-3 rounded-lg border ${answers[q.id]?.trim().toLowerCase() === q.correctAnswer?.trim().toLowerCase()
                           ? 'bg-green-50 border-green-200'
-                          : q.type === 'fill-in-the-blanks' ? 'bg-red-50 border-red-200' : 'bg-muted'
+                          : 'bg-red-50 border-red-200'
                         }`}>
                         <p className="text-sm font-semibold mb-1">Your Answer:</p>
                         <p>{answers[q.id] || "No answer provided"}</p>
                       </div>
                       
-                      {q.type !== 'long-answer' && q.correctAnswer && (
+                      {q.correctAnswer && (
                         <div className="p-3 rounded-lg border bg-green-50 border-green-200">
                           <p className="text-sm font-semibold mb-1">Model Answer:</p>
                           <p>{q.correctAnswer}</p>
                         </div>
                       )}
-
-                      <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">
-                        <p className="text-sm font-semibold mb-1 text-blue-800">Teacher Review Required</p>
-                        <p className="text-xs text-blue-700">This answer will be graded manually.</p>
-                      </div>
                     </div>
                   )}
                   {q.explanation && q.type === 'mcq' && (
@@ -524,27 +523,7 @@ function TakeQuizContent({ id }: { id: string }) {
               </div>
             )}
 
-            {currentQuestion.type === 'short-answer' && (
-              <div className="space-y-4">
-                <Input
-                  value={answers[currentQuestion.id] || ""}
-                  onChange={(e) => handleAnswerChange(e.target.value)}
-                  placeholder="Your short answer..."
-                  className="text-lg py-6"
-                />
-              </div>
-            )}
 
-            {currentQuestion.type === 'long-answer' && (
-              <div className="space-y-4">
-                <Textarea
-                  value={answers[currentQuestion.id] || ""}
-                  onChange={(e) => handleAnswerChange(e.target.value)}
-                  placeholder="Your detailed answer..."
-                  className="min-h-[200px] text-lg"
-                />
-              </div>
-            )}
           </CardContent>
           <CardFooter className="flex justify-between items-center bg-muted/30 p-6">
             <Button

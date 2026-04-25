@@ -31,7 +31,7 @@ import Link from 'next/link';
 
 interface Question {
   id: string;
-  type: 'mcq' | 'fill-in-the-blanks' | 'short-answer' | 'long-answer';
+  type: 'mcq' | 'fill-in-the-blanks';
   questionText: string;
   answerChoices: string[];
   correctAnswer: string;
@@ -298,8 +298,6 @@ export default function CreateQuizPage() {
                                   <SelectContent>
                                     <SelectItem value="mcq">Multiple Choice</SelectItem>
                                     <SelectItem value="fill-in-the-blanks">Fill in Blanks</SelectItem>
-                                    <SelectItem value="short-answer">Short Answer</SelectItem>
-                                    <SelectItem value="long-answer">Long Answer</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <div className="flex items-center gap-2">
@@ -357,7 +355,7 @@ export default function CreateQuizPage() {
                            ) : (
                              <div className="space-y-2">
                                <Label className="text-xs uppercase font-bold text-muted-foreground">
-                                 {q.type === 'fill-in-the-blanks' ? 'Correct Word(s)' : 'Model Answer (Optional for long-answer)'}
+                                 {q.type === 'fill-in-the-blanks' ? 'Correct Word(s)' : 'Model Answer'}
                                </Label>
                                <Input 
                                  placeholder={q.type === 'fill-in-the-blanks' ? "The word that fills the blank" : "What should the student write?"}

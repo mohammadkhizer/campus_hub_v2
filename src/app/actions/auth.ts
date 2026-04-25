@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
 import { env } from '@/lib/env';
+import { safeAction } from '@/lib/actions';
+import { fromLean, toDTO } from '@/lib/dto';
 
 const JWT_SECRET = env.JWT_SECRET;
 
@@ -19,69 +21,51 @@ const loginSchema = z.object({
 
 const signupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
-  firstName: z.string().min(2),
-  lastName: z.string().min(2),
+  password: z.string().min(8).max(64).regex(/[A-Z]/, "Password must contain at least one uppercase letter").regex(/[0-9]/, "Password must contain at least one number"),
+  firstName: z.string().min(2).max(50),
+  lastName: z.string().min(2).max(50),
   role: z.enum(['student', 'teacher', 'administrator', 'superadmin']).default('student'),
   enrollmentNumber: z.string().optional(),
   contactNumber: z.string().optional(),
 });
 
+const profileSchema = z.object({
+  firstName: z.string().min(2).max(50),
+  lastName: z.string().min(2).max(50),
+  email: z.string().email(),
+  enrollmentNumber: z.string().optional(),
+  contactNumber: z.string().optional(),
+  password: z.string().min(8).max(64).regex(/[A-Z]/).regex(/[0-9]/).optional().or(z.literal('')),
+});
+
 export async function loginAction(formData: FormData) {
-  console.log('--- [DEBUG] loginAction started ---');
-  try {
-    // 1. Rate Limiting
-    console.log('Checking rate limit...');
-    const rateLimit = await checkRateLimit({ limit: 5, windowMs: 60 * 1000 });
+  return safeAction(async () => {
+    // Tightened Rate Limit for Login
+    const rateLimit = await checkRateLimit({ limit: 3, windowMs: 60 * 1000 });
     if (!rateLimit.success) {
-      console.log('Rate limit exceeded');
-      return { error: `Too many attempts. Try again in ${rateLimit.reset} seconds.` };
+      logger.security('Brute-force attempt detected', { email: formData.get('email') });
+      throw new Error(`Too many attempts. Try again in ${rateLimit.reset} seconds.`);
     }
 
-    // 2. Database connection
-    console.log('Connecting to database...');
     await dbConnect();
-    
-    // 3. Validation
-    console.log('Validating data...');
     const rawData = Object.fromEntries(formData.entries());
-    const validated = loginSchema.safeParse(rawData);
-    
-    if (!validated.success) {
-      console.log('Validation failed');
-      return { error: 'Invalid input data' };
-    }
+    const { email, password } = loginSchema.parse(rawData);
 
-    const { email, password } = validated.data;
-
-    // 4. User lookup
-    console.log('Looking up user:', email);
     const user = await User.findOne({ email });
-    if (!user) {
-      console.log('User not found');
-      logger.warn('Failed login attempt: User not found', { email });
-      return { error: 'Invalid credentials' };
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      logger.warn('Failed login attempt', { email });
+      throw new Error('Invalid credentials');
     }
 
-    // 5. Password comparison
-    console.log('Comparing passwords...');
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      console.log('Password mismatch');
-      logger.warn('Failed login attempt: Invalid password', { email });
-      return { error: 'Invalid credentials' };
-    }
+    if (!JWT_SECRET) throw new Error('Server configuration error');
 
-    // 6. Token generation and Cookie setting
-    console.log('Generating token...');
-    if (!JWT_SECRET) {
-      console.error('JWT_SECRET is missing!');
-      return { error: 'Server configuration error' };
-    }
-
-    const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
+    // Include passwordVersion in JWT for session revocation
+    const token = jwt.sign(
+      { userId: user._id.toString(), pv: user.passwordVersion || 1 }, 
+      JWT_SECRET, 
+      { expiresIn: '7d' }
+    );
     
-    console.log('Setting cookie...');
     const cookieStore = await cookies();
     cookieStore.set('authToken', token, { 
       httpOnly: true, 
@@ -91,58 +75,32 @@ export async function loginAction(formData: FormData) {
       sameSite: 'strict'
     });
 
-    console.log('Login successful');
     logger.info('User logged in', { userId: user._id, email });
     return { success: true };
-  } catch (error: any) {
-    console.error('--- [DEBUG] loginAction FATAL ERROR ---', error);
-    logger.error('Login action error', { error: error.message, stack: error.stack });
-    return { error: 'An unexpected error occurred: ' + (error.message || 'Unknown error') };
-  }
+  }, formData, { name: 'loginAction' });
 }
 
 export async function signupAction(formData: FormData) {
-  try {
-    // 1. Rate Limiting
-    const rateLimit = await checkRateLimit({ limit: 3, windowMs: 60 * 60 * 1000 }); // 3 signups per hour per IP
-    if (!rateLimit.success) {
-      return { error: 'Signup limit exceeded. Please try again later.' };
-    }
+  return safeAction(async () => {
+    const rateLimit = await checkRateLimit({ limit: 3, windowMs: 60 * 60 * 1000 });
+    if (!rateLimit.success) throw new Error('Signup limit exceeded. Please try again later.');
 
     await dbConnect();
-
-    // 2. Validation
     const rawData = Object.fromEntries(formData.entries());
-    const validated = signupSchema.safeParse(rawData);
+    const data = signupSchema.parse(rawData);
+
+    const existingUser = await User.findOne({ email: data.email });
+    if (existingUser) throw new Error('Email already exists');
+
+    const hashedPassword = await bcrypt.hash(data.password, 12);
+    const user = await User.create({ ...data, password: hashedPassword, passwordVersion: 1 });
+
+    const token = jwt.sign(
+      { userId: user._id.toString(), pv: 1 }, 
+      JWT_SECRET, 
+      { expiresIn: '7d' }
+    );
     
-    if (!validated.success) {
-      return { error: 'Invalid input: ' + validated.error.errors[0].message };
-    }
-
-    const { email, password, firstName, lastName, role, enrollmentNumber, contactNumber } = validated.data;
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return { error: 'Email already exists' };
-    }
-
-    if (enrollmentNumber) {
-      const existingEnrollment = await User.findOne({ enrollmentNumber });
-      if (existingEnrollment) return { error: 'Enrollment Number already in use' };
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12); // Increased salt rounds
-    const user = await User.create({
-      email,
-      password: hashedPassword,
-      firstName,
-      lastName,
-      role,
-      enrollmentNumber,
-      contactNumber
-    });
-
-    const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
     const cookieStore = await cookies();
     cookieStore.set('authToken', token, { 
       httpOnly: true, 
@@ -152,24 +110,18 @@ export async function signupAction(formData: FormData) {
       sameSite: 'strict'
     });
 
-    logger.security('New user registered', { userId: user._id, email, role });
+    logger.security('New user registered', { userId: user._id, email: data.email, role: data.role });
     return { success: true };
-  } catch (error: any) {
-    logger.error('Signup action error', { error: error.message, stack: error.stack });
-    return { error: error.message || 'Account creation failed' };
-  }
+  }, formData, { name: 'signupAction' });
 }
 
 export async function logoutAction() {
-  try {
+  return safeAction(async () => {
     const cookieStore = await cookies();
     cookieStore.delete('authToken');
     logger.info('User logged out');
     return { success: true };
-  } catch (error: any) {
-    logger.error('Logout action error', { error: error.message });
-    return { success: false, error: 'Logout failed' };
-  }
+  }, null, { name: 'logoutAction' });
 }
 
 export async function getSessionAction() {
@@ -177,269 +129,129 @@ export async function getSessionAction() {
     await dbConnect();
     const cookieStore = await cookies();
     const token = cookieStore.get('authToken')?.value;
+    if (!token || !JWT_SECRET) return null;
 
-    if (!token) return null;
-
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, pv: number };
     const user = await User.findById(decoded.userId).select('-password').lean();
+    
     if (!user) return null;
-    return {
-      id: (user as any)._id.toString(),
-      email: (user as any).email,
-      firstName: (user as any).firstName,
-      lastName: (user as any).lastName,
-      role: (user as any).role,
-      enrollmentNumber: (user as any).enrollmentNumber,
-      contactNumber: (user as any).contactNumber
-    };
+
+    // Session Revocation Check: If passwordVersion changed, invalidate the old token
+    if (user.passwordVersion && decoded.pv !== user.passwordVersion) {
+      logger.security('Stale session detected and revoked', { userId: user._id });
+      return null;
+    }
+    
+    return fromLean<any>(user);
   } catch (error: any) {
     logger.warn('Invalid session or session error', { error: error.message });
     return null;
   }
 }
 
-export async function updateProfileAction(data: { 
-  firstName: string, 
-  lastName: string, 
-  email: string, 
-  enrollmentNumber?: string, 
-  contactNumber?: string,
-  password?: string 
-}) {
-  try {
+export async function updateProfileAction(data: any) {
+  return safeAction(async () => {
     const session = await getSessionAction();
-    if (!session) return { success: false, error: 'Unauthorized' };
+    if (!session) throw new Error('Unauthorized');
 
     await dbConnect();
+    const validated = profileSchema.parse(data);
+
+    if (validated.email !== session.email) {
+      if (await User.exists({ email: validated.email })) throw new Error('Email already in use');
+    }
+
+    const updateData: any = { ...validated };
     
-    // Check for email collision
-    if (data.email !== session.email) {
-      const existing = await User.findOne({ email: data.email });
-      if (existing) return { success: false, error: 'Email already in use' };
-    }
-
-    // Check for enrollment collision
-    if (data.enrollmentNumber && data.enrollmentNumber !== (session as any).enrollmentNumber) {
-      const existing = await User.findOne({ enrollmentNumber: data.enrollmentNumber });
-      if (existing) return { success: false, error: 'Enrollment Number already in use' };
-    }
-
-    const updateData: any = {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      enrollmentNumber: data.enrollmentNumber,
-      contactNumber: data.contactNumber,
-    };
-
-    if (data.password && data.password.trim().length > 0) {
-      if (data.password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
-      updateData.password = await bcrypt.hash(data.password, 12);
+    // If password is changed, increment passwordVersion to invalidate all other sessions
+    if (validated.password) {
+      updateData.password = await bcrypt.hash(validated.password, 12);
+      updateData.$inc = { passwordVersion: 1 };
+      delete updateData.passwordVersion; // Use $inc instead
+    } else {
+      delete updateData.password;
     }
 
     await User.findByIdAndUpdate(session.id, updateData);
-    logger.info('Profile updated', { userId: session.id, email: data.email });
-    
+    logger.info('Profile updated', { userId: session.id, email: validated.email });
     return { success: true };
-  } catch (error: any) {
-    logger.error('updateProfileAction error', { error: error.message });
-    return { success: false, error: 'Profile update failed' };
-  }
+  }, data, { name: 'updateProfileAction' });
 }
 
-
 export async function getStudentsAction() {
-  try {
+  return safeAction(async () => {
     const session = await getSessionAction();
     if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) {
-      return [];
+      throw new Error("Unauthorized");
     }
 
     await dbConnect();
     const students = await User.find({ role: 'student' }).select('-password').lean();
-    return JSON.parse(JSON.stringify(students)).map((s: any) => ({
-      ...s,
-      id: s._id.toString()
-    }));
-  } catch (error: any) {
-    logger.error('getStudentsAction error', { error: error.message });
-    return [];
-  }
+    return fromLean<any[]>(students);
+  }, null, { name: 'getStudentsAction' });
 }
 
 export async function getUsersByRoleAction(roles: string[]) {
-  try {
+  return safeAction(async () => {
     const session = await getSessionAction();
     if (!session || !['administrator', 'superadmin'].includes(session.role)) {
-      return [];
+      throw new Error("Unauthorized");
     }
 
     await dbConnect();
     const users = await User.find({ role: { $in: roles } }).select('-password').lean();
-    return JSON.parse(JSON.stringify(users)).map((u: any) => ({
-      ...u,
-      id: u._id.toString()
-    }));
-  } catch (error: any) {
-    logger.error('getUsersByRoleAction error', { error: error.message });
-    return [];
-  }
+    return fromLean<any[]>(users);
+  }, roles, { name: 'getUsersByRoleAction' });
 }
 
 export async function promoteToAdmin(email: string) {
-  try {
+  return safeAction(async () => {
     const session = await getSessionAction();
     if (!session || !['administrator', 'superadmin'].includes(session.role)) {
-      logger.security('Unauthorized promoteToAdmin attempt', { email: session?.email });
-      return { success: false, error: 'Unauthorized' };
+      throw new Error("Unauthorized");
     }
 
     await dbConnect();
-    const user = await User.findOneAndUpdate(
-      { email }, 
-      { role: 'administrator' },
-      { new: true }
-    );
-    if (!user) return { success: false, error: 'User not found' };
+    const user = await User.findOneAndUpdate({ email }, { role: 'administrator' }, { new: true });
+    if (!user) throw new Error('User not found');
     
     logger.security('User promoted to Administrator', { targetEmail: email, adminEmail: session.email });
-    return { success: true, message: `User ${email} is now an Administrator` };
-  } catch (error: any) {
-    logger.error('promoteToAdmin error', { error: error.message });
-    return { success: false, error: 'Operation failed' };
-  }
+    return { success: true };
+  }, email, { name: 'promoteToAdmin' });
 }
 
-export async function createTeacherAction(data: { firstName: string, lastName: string, email: string, password: string }) {
-  try {
+export async function createTeacherAction(data: any) {
+  return safeAction(async () => {
     const session = await getSessionAction();
-    if (!session || !['administrator', 'superadmin'].includes(session.role)) {
-      logger.security('Unauthorized createTeacherAction attempt', { adminEmail: session?.email });
-      return { success: false, error: "Unauthorized" };
-    }
+    if (!session || !['administrator', 'superadmin'].includes(session.role)) throw new Error("Unauthorized");
 
     await dbConnect();
-    
-    // Basic validation for manual data object
-    if (!data.email || !data.password || data.password.length < 6) {
-      return { success: false, error: "Invalid input data" };
-    }
+    const validated = signupSchema.parse({ ...data, role: 'teacher' });
 
-    const existingUser = await User.findOne({ email: data.email });
-    if (existingUser) return { success: false, error: "Email already exists" };
+    if (await User.exists({ email: validated.email })) throw new Error("Email already exists");
 
-    const hashedPassword = await bcrypt.hash(data.password, 12);
-    const newTeacher = await User.create({
-      ...data,
-      password: hashedPassword,
-      role: 'teacher'
-    });
+    const hashedPassword = await bcrypt.hash(validated.password, 12);
+    await User.create({ ...validated, password: hashedPassword, passwordVersion: 1 });
 
-    logger.security('New teacher created', { teacherId: newTeacher._id, adminEmail: session.email });
+    logger.security('New teacher created', { adminEmail: session.email });
     return { success: true };
-  } catch (error: any) {
-    logger.error('createTeacherAction error', { error: error.message });
-    return { success: false, error: 'Could not create teacher' };
-  }
-}
-
-export async function createStudentAction(data: { 
-  firstName: string, 
-  lastName: string, 
-  email: string, 
-  password: string,
-  enrollmentNumber: string,
-  contactNumber: string 
-}) {
-  try {
-    const session = await getSessionAction();
-    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) {
-      return { success: false, error: "Unauthorized" };
-    }
-
-    await dbConnect();
-    
-    if (!data.email || !data.password || data.password.length < 6) {
-      return { success: false, error: "Invalid email or password (min 6 chars)" };
-    }
-
-    const existingUser = await User.findOne({ email: data.email });
-    if (existingUser) return { success: false, error: "Email already exists" };
-
-    if (data.enrollmentNumber) {
-      const existingEnrollment = await User.findOne({ enrollmentNumber: data.enrollmentNumber });
-      if (existingEnrollment) return { success: false, error: "Enrollment Number already assigned" };
-    }
-
-    const hashedPassword = await bcrypt.hash(data.password, 12);
-    const newStudent = await User.create({
-      ...data,
-      password: hashedPassword,
-      role: 'student'
-    });
-
-    logger.security('New student created', { studentId: newStudent._id, creatorEmail: session.email });
-    return { success: true };
-  } catch (error: any) {
-    logger.error('createStudentAction error', { error: error.message });
-    return { success: false, error: error.message || 'Could not onboard student' };
-  }
-}
-
-export async function updateCoordinatorAction(coordinatorId: string, data: { firstName: string, lastName: string, email: string, password?: string }) {
-  try {
-    const session = await getSessionAction();
-    if (!session || !['administrator', 'superadmin'].includes(session.role)) {
-      return { success: false, error: "Unauthorized" };
-    }
-
-    await dbConnect();
-    const existing = await User.findOne({ email: data.email, _id: { $ne: coordinatorId } });
-    if (existing) return { success: false, error: "Email already in use by another user." };
-
-    const updateData: any = {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-    };
-
-    if (data.password && data.password.trim().length > 0) {
-      if (data.password.length < 6) return { success: false, error: "Password too short (min 6)" };
-      updateData.password = await bcrypt.hash(data.password, 12);
-    }
-
-    const updated = await User.findByIdAndUpdate(coordinatorId, updateData, { new: true }).select('-password').lean();
-    if (!updated) return { success: false, error: "Coordinator not found." };
-
-    logger.security('Coordinator updated', { coordinatorId, adminEmail: session.email });
-    return { success: true };
-  } catch (error: any) {
-    logger.error('updateCoordinatorAction error', { error: error.message });
-    return { success: false, error: "Update failed" };
-  }
+  }, data, { name: 'createTeacherAction' });
 }
 
 export async function deleteCoordinatorAction(coordinatorId: string) {
-  try {
+  return safeAction(async () => {
     const session = await getSessionAction();
-    if (!session || !['administrator', 'superadmin'].includes(session.role)) {
-      return { success: false, error: "Unauthorized" };
-    }
+    if (!session || !['administrator', 'superadmin'].includes(session.role)) throw new Error("Unauthorized");
 
     await dbConnect();
     const user = await User.findById(coordinatorId);
-    if (!user) return { success: false, error: "Coordinator not found." };
-    if (user.role !== 'teacher') return { success: false, error: "This user is not a coordinator." };
+    if (!user) throw new Error("Coordinator not found");
 
     const Course = (await import('@/models/Course')).default;
     await Course.updateMany({ faculty: coordinatorId }, { $unset: { faculty: 1 } });
-
     await User.findByIdAndDelete(coordinatorId);
 
     logger.security('Coordinator deleted', { coordinatorId, adminEmail: session.email });
     return { success: true };
-  } catch (error: any) {
-    logger.error('deleteCoordinatorAction error', { error: error.message });
-    return { success: false, error: "Deletion failed" };
-  }
+  }, coordinatorId, { name: 'deleteCoordinatorAction' });
 }
