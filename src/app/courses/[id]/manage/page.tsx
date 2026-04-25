@@ -85,7 +85,8 @@ function CourseManagePage() {
   const [submitting, setSubmitting] = useState(false);
 
   const loadData = async () => {
-    const data = await getCourseDetail(id);
+    const res = await getCourseDetail(id);
+    const data = res?.success && res.data ? res.data : null;
     if (!data) {
       toast({ title: "Error", description: "Course not found", variant: "destructive" });
       router.push('/admin');

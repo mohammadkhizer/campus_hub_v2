@@ -238,6 +238,30 @@ export async function createTeacherAction(data: any) {
   }, data, { name: 'createTeacherAction' });
 }
 
+export async function updateCoordinatorAction(coordinatorId: string, data: any) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'superadmin'].includes(session.role)) throw new Error("Unauthorized");
+
+    await dbConnect();
+    const updateData: any = { 
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email
+    };
+    if (data.password) {
+      const bcrypt = (await import('bcryptjs')).default;
+      updateData.password = await bcrypt.hash(data.password, 12);
+      updateData.$inc = { passwordVersion: 1 };
+    }
+    
+    const User = (await import('@/models/User')).default;
+    await User.findByIdAndUpdate(coordinatorId, updateData);
+    logger.security('Coordinator updated', { coordinatorId, adminEmail: session.email });
+    return { success: true };
+  }, { coordinatorId, data }, { name: 'updateCoordinatorAction' });
+}
+
 export async function deleteCoordinatorAction(coordinatorId: string) {
   return safeAction(async () => {
     const session = await getSessionAction();
@@ -254,4 +278,32 @@ export async function deleteCoordinatorAction(coordinatorId: string) {
     logger.security('Coordinator deleted', { coordinatorId, adminEmail: session.email });
     return { success: true };
   }, coordinatorId, { name: 'deleteCoordinatorAction' });
+}
+
+export async function createStudentAction(data: any) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'superadmin', 'teacher'].includes(session.role)) throw new Error("Unauthorized");
+
+    await dbConnect();
+    const existing = await User.findOne({ email: data.email });
+    if (existing) throw new Error("A user with this email already exists");
+
+    const bcryptLib = (await import('bcryptjs')).default;
+    const hashedPassword = await bcryptLib.hash(data.password, 12);
+
+    await User.create({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      password: hashedPassword,
+      role: 'student',
+      enrollmentNumber: data.enrollmentNumber,
+      contactNumber: data.contactNumber,
+      passwordVersion: 1
+    });
+
+    logger.security('Student created manually', { adminEmail: session.email, newStudentEmail: data.email });
+    return { success: true };
+  }, data, { name: 'createStudentAction' });
 }

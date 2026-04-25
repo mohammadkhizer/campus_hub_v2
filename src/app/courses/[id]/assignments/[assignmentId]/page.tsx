@@ -34,7 +34,8 @@ export default function AssignmentDetailPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const courseData = await getCourseDetail(courseId);
+      const courseRes = await getCourseDetail(courseId);
+      const courseData = courseRes?.success && courseRes.data ? courseRes.data : null;
       if (!courseData) {
         toast({ title: "Error", description: "Course not found", variant: "destructive" });
         router.push('/courses');
@@ -50,7 +51,8 @@ export default function AssignmentDetailPage() {
       }
       setAssignment(assign);
 
-      const subs = await getSubmissions(assignmentId);
+      const subsRes = await getSubmissions(assignmentId);
+      const subs = subsRes?.success && subsRes.data ? subsRes.data : [];
       setAllSubmissions(subs);
 
       if (profile) {
@@ -101,9 +103,10 @@ export default function AssignmentDetailPage() {
       if (result.success) {
         toast({ title: "Success", description: "Assignment submitted successfully!" });
         // Reload to show submission
-        const subs = await getSubmissions(assignmentId);
-        setAllSubmissions(subs);
-        const mine = subs.find((s: any) => s.student === profile.id);
+        const reloadRes = await getSubmissions(assignmentId);
+        const reloadSubs = reloadRes?.success && reloadRes.data ? reloadRes.data : [];
+        setAllSubmissions(reloadSubs);
+        const mine = reloadSubs.find((s: any) => s.student === profile.id);
         if (mine) setMySubmission(mine);
       } else {
         throw new Error("Failed to save submission");

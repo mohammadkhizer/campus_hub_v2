@@ -50,8 +50,8 @@ export default function CreateEditClassroom({ params }: { params?: any }) {
         getStudentsAction(),
         getCourses()
       ]);
-      setStudents(allStudents);
-      setCourses(allCourses);
+      setStudents(allStudents?.success && allStudents.data ? allStudents.data : []);
+      setCourses(allCourses?.success && allCourses.data ? allCourses.data : []);
 
       if (id) {
         const detail = await getClassroomDetail(id);

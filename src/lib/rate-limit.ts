@@ -11,7 +11,6 @@
 import { headers } from 'next/headers';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { logger } from './logger';
 import { env } from './env';
 
 // Initialize Redis client
@@ -28,7 +27,7 @@ const redis = (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN)
  */
 function createLimiter(limit: number, windowMs: number) {
   if (!redis) {
-    logger.warn('RATE_LIMIT: Redis not configured. Falling back to permissive mode.');
+    console.warn('RATE_LIMIT: Redis not configured. Falling back to permissive mode.');
     return null;
   }
 
@@ -78,7 +77,7 @@ export async function checkRateLimit(
     const resetSeconds = Math.ceil((reset - Date.now()) / 1000);
 
     if (!success) {
-      logger.security('Rate limit exceeded', { ip, limit, remaining });
+      console.warn('Rate limit exceeded', { ip, limit, remaining });
     }
 
     return {
@@ -88,7 +87,7 @@ export async function checkRateLimit(
       reset: resetSeconds,
     };
   } catch (error: any) {
-    logger.error('Rate limit execution error', { error: error.message });
+    console.error('Rate limit execution error', { error: error.message });
     // Fail safe (allow) on infrastructure errors to prevent blocking users
     return { success: true, limit: config.limit, remaining: 1, reset: 0 };
   }

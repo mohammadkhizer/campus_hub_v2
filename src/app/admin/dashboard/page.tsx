@@ -74,16 +74,16 @@ function AdminContent() {
     if (!profile) return;
     setLoading(true);
     try {
-      const [coursesData, facultyData, classroomData, quizzesData] = await Promise.all([
+      const [coursesRes, facultyRes, classroomRes, quizzesRes] = await Promise.all([
         getCourses(),
         getUsersByRoleAction(['teacher']),
         getClassrooms(),
         import('@/app/actions/quizzes').then(m => m.serverGetQuizzes())
       ]);
-      setCourses(coursesData);
-      setFaculty(facultyData);
-      setClassrooms(classroomData);
-      setQuizzes(quizzesData);
+      setCourses(coursesRes?.success && coursesRes.data ? coursesRes.data : []);
+      setFaculty(facultyRes?.success && facultyRes.data ? facultyRes.data : []);
+      setClassrooms(classroomRes?.success && classroomRes.data ? classroomRes.data : []);
+      setQuizzes(quizzesRes?.success && quizzesRes.data ? quizzesRes.data : []);
     } catch (err) {
       console.error("Load error:", err);
     } finally {

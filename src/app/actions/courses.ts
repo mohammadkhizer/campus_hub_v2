@@ -110,6 +110,26 @@ export async function createCourse(data: any) {
   }, data, { name: 'createCourse' });
 }
 
+export async function updateCourse(courseId: string, data: any) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!['administrator', 'superadmin'].includes(session?.role || '')) throw new Error("Unauthorized");
+    
+    await dbConnect();
+    const validated = CourseSchema.parse({
+      ...data,
+      targetLectures: Number(data.targetLectures) || 0,
+      targetAssessments: Number(data.targetAssessments) || 0,
+    });
+
+    await CourseModel.findByIdAndUpdate(courseId, validated);
+    logger.info('Course updated', { courseId, adminEmail: session?.email });
+    revalidatePath('/admin');
+    revalidatePath(`/courses/${courseId}`);
+    return { success: true };
+  }, { courseId, data }, { name: 'updateCourse' });
+}
+
 export async function updateCourseStatus(courseId: string, isPublished: boolean) {
   return safeAction(async () => {
     await dbConnect();
@@ -133,6 +153,72 @@ export async function saveNote(data: { courseId: string; title: string; descript
     revalidatePath(`/courses/${data.courseId}`);
     return { success: true };
   }, data, { name: 'saveNote' });
+}
+
+export async function updateNote(noteId: string, data: { title: string; description?: string; fileUrl: string; courseId: string }) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) throw new Error("Unauthorized");
+    await dbConnect();
+    await NoteModel.findByIdAndUpdate(noteId, { title: data.title, description: data.description, fileUrl: data.fileUrl });
+    revalidatePath(`/courses/${data.courseId}`);
+    return { success: true };
+  }, { noteId, data }, { name: 'updateNote' });
+}
+
+export async function deleteNote(noteId: string, courseId: string) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) throw new Error("Unauthorized");
+    await dbConnect();
+    await NoteModel.findByIdAndDelete(noteId);
+    revalidatePath(`/courses/${courseId}`);
+    return { success: true };
+  }, { noteId, courseId }, { name: 'deleteNote' });
+}
+
+export async function updateAnnouncement(annId: string, data: { title: string; content: string; attachmentUrl?: string; courseId: string }) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) throw new Error("Unauthorized");
+    await dbConnect();
+    await AnnouncementModel.findByIdAndUpdate(annId, { title: data.title, content: data.content, attachmentUrl: data.attachmentUrl });
+    revalidatePath(`/courses/${data.courseId}`);
+    return { success: true };
+  }, { annId, data }, { name: 'updateAnnouncement' });
+}
+
+export async function deleteAnnouncement(annId: string, courseId: string) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) throw new Error("Unauthorized");
+    await dbConnect();
+    await AnnouncementModel.findByIdAndDelete(annId);
+    revalidatePath(`/courses/${courseId}`);
+    return { success: true };
+  }, { annId, courseId }, { name: 'deleteAnnouncement' });
+}
+
+export async function updateAssignment(asgId: string, data: { title: string; description: string; deadline: Date; attachmentUrl?: string; courseId: string }) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) throw new Error("Unauthorized");
+    await dbConnect();
+    await AssignmentModel.findByIdAndUpdate(asgId, { title: data.title, description: data.description, deadline: data.deadline, attachmentUrl: data.attachmentUrl });
+    revalidatePath(`/courses/${data.courseId}`);
+    return { success: true };
+  }, { asgId, data }, { name: 'updateAssignment' });
+}
+
+export async function deleteAssignment(asgId: string, courseId: string) {
+  return safeAction(async () => {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) throw new Error("Unauthorized");
+    await dbConnect();
+    await AssignmentModel.findByIdAndDelete(asgId);
+    revalidatePath(`/courses/${courseId}`);
+    return { success: true };
+  }, { asgId, courseId }, { name: 'deleteAssignment' });
 }
 
 export async function saveAnnouncement(data: { courseId: string; title: string; content: string; attachmentUrl?: string; adminId: string }) {
@@ -199,6 +285,13 @@ export async function enrollInCourse(courseId: string, studentId: string) {
     revalidatePath(`/courses/${courseId}`);
     return { success: true };
   }, { courseId, studentId }, { name: 'enrollInCourse' });
+}
+
+export async function checkEnrollment(courseId: string, studentId: string) {
+  const Classroom = (await import('@/models/Classroom')).default;
+  await dbConnect();
+  const exists = await Classroom.exists({ courses: courseId, students: studentId });
+  return !!exists;
 }
 
 export async function deleteCourse(courseId: string) {

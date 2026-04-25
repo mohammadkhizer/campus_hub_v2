@@ -42,7 +42,8 @@ export default function CourseDetailPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const data = await getCourseDetail(id);
+    const res = await getCourseDetail(id);
+      const data = res?.success && res.data ? res.data : null;
       if (!data) {
         toast({ title: "Error", description: "Course not found", variant: "destructive" });
         router.push('/courses');
@@ -52,7 +53,8 @@ export default function CourseDetailPage() {
       // -- NEW: CLASSROOM SECURITY CHECK --
       if (profile?.role === 'student' && profile.id) {
         const { getStudentAccessibleCourses } = await import('@/app/actions/classrooms');
-        const accessible = await getStudentAccessibleCourses(profile.id);
+        const accessRes = await getStudentAccessibleCourses(profile.id);
+        const accessible = accessRes?.success && accessRes.data ? accessRes.data : [];
         const isAccessible = accessible.some((c: any) => c.id === data.id);
         
         if (!isAccessible) {

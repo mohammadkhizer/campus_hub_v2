@@ -2,12 +2,33 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  serverExternalPackages: ['genkit', '@genkit-ai/google-genai', '@opentelemetry/sdk-node'],
+  serverExternalPackages: [
+    'mongoose',
+    'mongodb',
+    'google-logging-utils',
+    'gcp-metadata',
+    'genkit',
+    '@genkit-ai/google-genai',
+    '@opentelemetry/sdk-node',
+  ],
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        net: false,
+        tls: false,
+        dns: false,
+        fs: false,
+        process: false,
+      };
+    }
+    return config;
   },
   images: {
     remotePatterns: [
@@ -53,8 +74,5 @@ export default withSentryConfig(nextConfig, {
   project: "campus-hub-v2",
   widenClientFileUpload: true,
   tunnelRoute: "/monitoring",
-  hideSourceMaps: true,
-  disableLogger: true,
-  automaticVercelMonitors: true,
 });
 

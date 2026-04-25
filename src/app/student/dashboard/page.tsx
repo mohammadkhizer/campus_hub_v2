@@ -40,7 +40,7 @@ function StudentContent() {
         getStudentDeadlinesAction(),
         import('@/lib/store').then(m => m.getAttempts(profile.id))
       ]);
-      setCourses(coursesData);
+      setCourses(coursesData?.success && coursesData.data ? coursesData.data : []);
       setClassrooms(classroomData);
       setMetrics(metricsData);
       setDeadlines(deadlineData);

@@ -45,7 +45,7 @@ function CreateCourseContent() {
   useEffect(() => {
     const loadFaculty = async () => {
       const users = await getUsersByRoleAction(['teacher', 'subject_coordinator']);
-      setFaculty(users);
+      setFaculty(users?.success && users.data ? users.data : []);
     };
     loadFaculty();
   }, []);
