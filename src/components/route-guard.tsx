@@ -34,10 +34,14 @@ export function RouteGuard({
       const allowedRoles = Array.isArray(allowedRole) ? allowedRole : [allowedRole];
       if (!allowedRoles.includes(profile?.role as any)) {
         // Redirect to the correct dashboard based on their actual role
-        if (profile?.role === 'administrator' || profile?.role === 'teacher') {
-          router.replace('/admin');
+        if (profile?.role === 'superadmin') {
+          router.replace('/superadmin/dashboard');
+        } else if (profile?.role === 'administrator') {
+          router.replace('/admin/dashboard');
+        } else if (profile?.role === 'teacher') {
+          router.replace('/teacher/dashboard');
         } else {
-          router.replace('/dashboard');
+          router.replace('/student/dashboard');
         }
       }
     }

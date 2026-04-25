@@ -18,10 +18,12 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Trophy, Home, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 function TakeQuizContent({ id }: { id: string }) {
   const { profile } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,9 +44,24 @@ function TakeQuizContent({ id }: { id: string }) {
   useEffect(() => {
     const fetchQuiz = async () => {
       setLoading(true);
-      const data = await getQuiz(id);
+      const [data, studentAttempts] = await Promise.all([
+        getQuiz(id),
+        profile?.role === 'student' ? import('@/app/actions/quizzes').then(m => m.serverGetAttempts(profile.id)) : Promise.resolve([])
+      ]);
+
       if (data) {
         
+        // One Attempt per Student Rule
+        if (profile?.role === 'student' && studentAttempts.some((a: any) => a.quiz === id)) {
+          toast({ 
+            title: "Access Denied", 
+            description: "You cant attempt exam second time", 
+            variant: "destructive" 
+          });
+          router.push(`/quizzes`);
+          return;
+        }
+
         // Enrollment Check for Students
         if (profile?.role === 'student' && data.course) {
           const isEnrolled = await checkEnrollment(data.course, profile.id);
@@ -325,7 +342,7 @@ function TakeQuizContent({ id }: { id: string }) {
               <Button asChild className="bg-primary">
                 <Link href="/dashboard"><Home className="mr-2 h-4 w-4" /> Back to Dashboard</Link>
               </Button>
-              <Button variant="outline" asChild>
+              <Button variant="ghost" asChild>
                 <Link href="/quizzes">Take More Quizzes</Link>
               </Button>
             </div>
@@ -455,7 +472,7 @@ function TakeQuizContent({ id }: { id: string }) {
 export default function TakeQuizPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   return (
-    <RouteGuard>
+    <RouteGuard allowedRole="student">
       <TakeQuizContent id={id} />
     </RouteGuard>
   );

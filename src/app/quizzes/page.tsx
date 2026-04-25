@@ -254,7 +254,7 @@ function QuizListContent() {
 
 export default function QuizListPage() {
   return (
-    <RouteGuard>
+    <RouteGuard allowedRole="student">
       <QuizListContent />
     </RouteGuard>
   );

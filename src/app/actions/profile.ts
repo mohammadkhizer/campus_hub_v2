@@ -12,8 +12,10 @@ const UpdateProfileSchema = z.object({
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   email: z.string().email(),
+  enrollmentNumber: z.string().optional(),
+  contactNumber: z.string().optional(),
   currentPassword: z.string().optional(),
-  newPassword: z.string().min(8).optional().or(z.literal('')),
+  newPassword: z.string().min(6).optional().or(z.literal('')),
 });
 
 /**
@@ -91,6 +93,8 @@ export async function getMyProfile() {
     lastName: userData.lastName,
     email: userData.email,
     role: userData.role,
+    enrollmentNumber: userData.enrollmentNumber,
+    contactNumber: userData.contactNumber,
     createdAt: userData.createdAt,
     stats,
   };
@@ -110,22 +114,30 @@ export async function updateMyProfile(data: any) {
 
   const validated = UpdateProfileSchema.safeParse(data);
   if (!validated.success) {
-    return { success: false, error: 'Invalid data' };
+    return { success: false, error: 'Invalid data: ' + validated.error.errors[0].message };
   }
 
-  const { firstName, lastName, email, currentPassword, newPassword } = validated.data;
+  const { firstName, lastName, email, enrollmentNumber, contactNumber, currentPassword, newPassword } = validated.data;
 
   // Check email uniqueness (excluding current user)
   const existing = await User.findOne({ email, _id: { $ne: session.id } });
   if (existing) return { success: false, error: 'Email is already taken by another account.' };
 
+  // Check enrollment uniqueness
+  if (enrollmentNumber && enrollmentNumber.trim() !== '') {
+    const existingEnrollment = await User.findOne({ enrollmentNumber: enrollmentNumber.trim(), _id: { $ne: session.id } });
+    if (existingEnrollment) return { success: false, error: 'Enrollment Number is already in use.' };
+  }
+
   const user = await User.findById(session.id);
   if (!user) return { success: false, error: 'User not found.' };
 
   const updateData: any = {
-    firstName,
-    lastName,
-    email,
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
+    email: email.trim(),
+    enrollmentNumber: enrollmentNumber?.trim() || null,
+    contactNumber: contactNumber?.trim() || null,
   };
 
   // Password change — requires current password verification

@@ -19,8 +19,10 @@ export default function LoginPage() {
   useEffect(() => {
     if (!isLoading && isAuthenticated && profile) {
       const destination = 
-        (profile.role === 'administrator' || profile.role === 'teacher') ? '/admin' : 
-        (profile.role === 'superadmin' ? '/superadmin' : '/dashboard');
+        profile.role === 'superadmin' ? '/superadmin/dashboard' : 
+        profile.role === 'administrator' ? '/admin/dashboard' : 
+        profile.role === 'teacher' ? '/teacher/dashboard' : 
+        '/student/dashboard';
       router.replace(destination);
     }
   }, [isLoading, isAuthenticated, profile, router]);

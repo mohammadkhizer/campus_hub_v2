@@ -47,11 +47,10 @@ The Super Admin is the platform's ultimate authority, responsible for global hea
 
 ### 📋 Key Features:
 - **Institutional Governance:** Full control over all platform operations, including overriding institutional parameters.
-- **Advanced Analytics Hub:** Real-time visibility into user growth, engagement metrics, and system-wide performance trends.
+- **Advanced Analytics Hub:** Real-time visibility into user growth, registration trends, and platform-wide performance metrics via interactive charts.
+- **Feedback Moderation:** Review and select student testimonials for platform-wide display; ability to delete or hide feedback.
 - **Global Role Management:** Dynamically create, assign, or revoke any user role (Super Admin, Admin, Teacher, Student).
 - **System Monitoring:** Integrated dashboard for tracking security logs, system errors, and suspicious activity.
-- **Configuration Authority:** Control platform-wide feature flags and global system configurations.
-- **Permission Override:** Capability to assume any sub-role (Admin/Teacher/Student) for support or auditing.
 
 ---
 
@@ -60,11 +59,10 @@ The Super Admin is the platform's ultimate authority, responsible for global hea
 The Administrator is the platform's overseer, responsible for institutional structure and staff integrity.
 
 ### 📋 Key Features:
+- **Comprehensive Leaderboards:** Access to per-quiz and academic-wide leaderboards with advanced search and performance sorting.
 - **Staff Management:** Full CRUD operations for "Active Coordinator Inventory" (Teacher accounts).
 - **Course Establishment:** Defining academic modules, assigning global Course Codes, and setting curriculum targets.
 - **Faculty Assignment:** Dynamically assigning Teachers to specific courses.
-- **Classroom Authority:** Creating classrooms and managing global enrollment parameters.
-- **Publishing Control:** Toggle course visibility across the platform for controlled rollouts.
 
 ---
 
@@ -74,10 +72,9 @@ Teachers are the primary content creators and instructional leads for their assi
 
 ### 📋 Key Features:
 - **Course Control Center:** A dedicated dashboard for managing instructional materials and students.
-- **Material Distribution:** Uploading lecture notes (PDFs, docs) and curated reference links.
+- **Performance Tracking:** Access to detailed quiz results and student-specific accuracy leaderboards.
 - **Assessment Suite:** Creating interactive, timed quizzes and generating academic assignments.
 - **Interactive Announcements:** Posting real-time updates and course-wide communications.
-- **Grading & Feedback:** Reviewing student assignment submissions with integrated feedback loops.
 
 ---
 
@@ -87,9 +84,10 @@ Campus Hub provides students with an intuitive, results-driven learning environm
 
 ### 📋 Key Features:
 - **Personalized Dashboard:** Real-time tracking of academic progress, accuracy, and milestones.
+- **One-Attempt Quiz Policy:** Secure assessment environment ensuring each student can perform a quiz exactly once.
+- **Unified Feedback System:** Dedicated space for students to submit testimonials and share their learning experience.
 - **Course Discovery:** Fluid navigation to accessible courses assigned to the student's classroom.
 - **Timed Assessments:** Distraction-free exam environment with immediate feedback and result breakdown.
-- **Unified Study Hub:** Centralized access to all notes, lecture materials, and announcements.
 
 ---
 
@@ -98,10 +96,9 @@ Campus Hub provides students with an intuitive, results-driven learning environm
 The platform has been redesigned for a modern, high-conversion SaaS aesthetic.
 
 ### ✨ Highlights:
-- **High-Impact Landing Page:** Conversion-focused public home page with glassmorphism and premium trust indicators.
+- **High-Impact Landing Page:** Conversion-focused public home page featuring student testimonials and premium trust indicators.
 - **Unified Smart Dashboard:** A role-based entry point that provides personalized welcomes and action shortcuts.
 - **Modular Widget Architecture:** Dashboard layouts using modern UI components for high-density information display.
-- **Responsive Fluid Design:** Seamless experience across all devices from mobile to desktop workstations.
 
 ---
 
@@ -110,8 +107,8 @@ The platform has been redesigned for a modern, high-conversion SaaS aesthetic.
 ### Prerequisites
 - Node.js (v18 or higher)
 - Primary MongoDB Connection URI
-- Secondary MongoDB Connection URI (for Failover)
-- Environment Variables (`JWT_SECRET`, `ENCRYPTION_KEY`)
+- Google Generative AI API Key (for Quiz AI)
+- Cloudinary Credentials (for Media)
 
 ### Installation & Execution
 1. **Clone & Install:**
@@ -126,6 +123,10 @@ The platform has been redesigned for a modern, high-conversion SaaS aesthetic.
    MONGODB_BACKUP_URI=secondary_uri
    JWT_SECRET=min_32_chars_secret
    ENCRYPTION_KEY=min_32_chars_key
+   GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_key
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+   CLOUDINARY_API_KEY=your_api_key
+   CLOUDINARY_API_SECRET=your_api_secret
    NODE_ENV=development
    ```
 3. **Run Platform:**

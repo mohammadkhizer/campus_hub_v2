@@ -27,8 +27,10 @@ export interface QuizAttempt {
   studentId: string;
   studentName?: string;
   studentEmail?: string;
+  studentEnrollment?: string;
   score: number;
   totalQuestions: number;
+  attemptedCount?: number;
   completedAt: string;
   status: 'completed' | 'disqualified';
   answers: Record<string, string>;

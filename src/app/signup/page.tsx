@@ -19,8 +19,10 @@ export default function SignupPage() {
   useEffect(() => {
     if (!isLoading && isAuthenticated && profile) {
       const destination = 
-        (profile.role === 'administrator' || profile.role === 'teacher') ? '/admin' : 
-        (profile.role === 'superadmin' ? '/superadmin' : '/dashboard');
+        profile.role === 'superadmin' ? '/superadmin/dashboard' : 
+        profile.role === 'administrator' ? '/admin/dashboard' : 
+        profile.role === 'teacher' ? '/teacher/dashboard' : 
+        '/student/dashboard';
       router.replace(destination);
     }
   }, [isLoading, isAuthenticated, profile, router]);
@@ -134,6 +136,36 @@ export default function SignupPage() {
                     required
                     className="form-input disabled:opacity-50 disabled:cursor-not-allowed"
                   />
+                </div>
+
+                {/* Enrollment & Contact */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label htmlFor="enrollmentNumber" className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                      Enrollment #
+                    </label>
+                    <input
+                      id="enrollmentNumber"
+                      name="enrollmentNumber"
+                      placeholder="ENR-001"
+                      disabled={loading}
+                      required
+                      className="form-input disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="contactNumber" className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                      Contact #
+                    </label>
+                    <input
+                      id="contactNumber"
+                      name="contactNumber"
+                      placeholder="+1..."
+                      disabled={loading}
+                      required
+                      className="form-input disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
                 </div>
 
                 {/* Password with show/hide toggle */}

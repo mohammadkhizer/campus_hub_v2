@@ -143,10 +143,17 @@ export async function serverSaveAttempt(attempt: any) {
 export async function serverGetAttempts(studentId: string) {
   try {
     await dbConnect();
-    const attempts = await AttemptModel.find({ student: studentId }).sort({ completedAt: -1 }).lean();
+    const attempts = await AttemptModel.find({ student: studentId })
+      .populate('student', 'firstName lastName email enrollmentNumber')
+      .sort({ completedAt: -1 })
+      .lean();
     return JSON.parse(JSON.stringify(attempts)).map((a: any) => ({
       ...a,
       id: a._id.toString(),
+      studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
+      studentEmail: a.student?.email || 'N/A',
+      studentEnrollment: a.student?.enrollmentNumber || 'N/A',
+      attemptedCount: a.answers ? Object.keys(a.answers).length : 0
     }));
   } catch (error) {
     console.error('Error fetching attempts:', error);
@@ -157,13 +164,56 @@ export async function serverGetAttempts(studentId: string) {
 export async function serverGetAllAttempts() {
   try {
     await dbConnect();
-    const attempts = await AttemptModel.find({}).sort({ completedAt: -1 }).lean();
+    const attempts = await AttemptModel.find({})
+      .populate('student', 'firstName lastName email enrollmentNumber')
+      .sort({ completedAt: -1 })
+      .lean();
     return JSON.parse(JSON.stringify(attempts)).map((a: any) => ({
       ...a,
       id: a._id.toString(),
+      studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
+      studentEmail: a.student?.email || 'N/A',
+      studentEnrollment: a.student?.enrollmentNumber || 'N/A',
+      attemptedCount: a.answers ? Object.keys(a.answers).length : 0
     }));
   } catch (error) {
     console.error('Error fetching all attempts:', error);
     return [];
+  }
+}
+
+export async function serverGetQuizAttempts(quizId: string) {
+  try {
+    await dbConnect();
+    const attempts = await AttemptModel.find({ quiz: quizId })
+      .populate('student', 'firstName lastName email enrollmentNumber')
+      .sort({ score: -1, completedAt: 1 })
+      .lean();
+    return JSON.parse(JSON.stringify(attempts)).map((a: any) => ({
+      ...a,
+      id: a._id.toString(),
+      studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
+      studentEmail: a.student?.email || 'N/A',
+      studentEnrollment: a.student?.enrollmentNumber || 'N/A',
+      attemptedCount: a.answers ? Object.keys(a.answers).length : 0
+    }));
+  } catch (error) {
+    console.error('Error fetching quiz attempts:', error);
+    return [];
+  }
+}
+
+export async function serverDeleteAttempt(attemptId: string) {
+  try {
+    const session = await getSessionAction();
+    if (!session || (session.role !== 'administrator' && session.role !== 'teacher')) {
+      return { success: false, error: "Unauthorized" };
+    }
+    await dbConnect();
+    await AttemptModel.findByIdAndDelete(attemptId);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting attempt:', error);
+    return { success: false, error: "Failed to delete attempt" };
   }
 }

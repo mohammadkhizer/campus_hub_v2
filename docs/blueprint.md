@@ -2,11 +2,14 @@
 
 ## Core Features:
 
-- User Authentication: Secure sign-up and log-in for student and administrator roles, enabling role-based access control.
-- Student Quiz Taking: Students can browse available quizzes, attempt questions, and submit their answers within a timed or untimed setting.
-- Instant Quiz Feedback: After quiz submission, students receive immediate results, including scores and correct/incorrect answers.
-- Admin Quiz Management: Administrators can create, edit, publish, and delete quizzes, along with managing individual questions and answer options.
-- AI Question Generation Tool: Admins can leverage an AI tool to automatically generate quiz questions and potential answer choices based on provided text or topic keywords.
+- User Authentication: Secure sign-up and log-in for students, teachers, administrators, and superadmins, enabling deep role-based access control.
+- Student Quiz Taking: Students can browse available quizzes, attempt questions (one attempt per quiz), and submit their answers within a timed or untimed setting.
+- Instant Quiz Feedback: After quiz submission, students receive immediate results, including scores, accuracy percentages, and detailed question reviews.
+- Admin & Teacher Dashboard: Staff can create, edit, publish, and delete quizzes, manage individual questions, and view student performance.
+- Leaderboard System: High-performance leaderboards showing rankings, scores, and completion times. Access is restricted to Teachers and Administrators.
+- Analytics & Growth Tracking: Super Admins have access to a dedicated analytics dashboard visualizing user growth, registration trends, and platform engagement metrics.
+- Feedback & Moderation: A system for students to share testimonials and suggestions, with a moderation panel for Super Admins to select which feedback is displayed publicly.
+- AI Question Generation Tool: Staff can leverage an AI tool to automatically generate quiz questions and potential answer choices based on provided text or topic keywords.
 - Student Performance Dashboard: Students have access to a personal dashboard showcasing their quiz history, performance analytics, and overall progress.
 
 ## Style Guidelines:

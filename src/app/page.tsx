@@ -1,13 +1,29 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/navbar';
 import Link from 'next/link';
-import { ArrowRight, Cpu, BarChart3, ShieldCheck, GraduationCap, Zap, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
+import { getDisplayedFeedbacks } from '@/lib/store';
+import { ArrowRight, Cpu, BarChart3, ShieldCheck, GraduationCap, Zap, LayoutDashboard, Star, Quote } from 'lucide-react';
 
 export default function LandingPage() {
   const { isAuthenticated, profile } = useAuth();
-  const dashboardHref = (profile?.role === 'administrator' || profile?.role === 'teacher') ? '/admin' : (profile?.role === 'superadmin' ? '/superadmin' : '/dashboard');
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchFeedbacks = async () => {
+      const data = await getDisplayedFeedbacks();
+      setFeedbacks(data);
+    };
+    fetchFeedbacks();
+  }, []);
+
+  const dashboardHref =
+    profile?.role === 'superadmin' ? '/superadmin/dashboard' :
+      profile?.role === 'administrator' ? '/admin/dashboard' :
+        profile?.role === 'teacher' ? '/teacher/dashboard' :
+          '/student/dashboard';
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <Navbar />
@@ -208,35 +224,118 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── FINAL CTA ─────────────────────────────────────────────────── */}
-        <section className="py-24 bg-neutral-surface">
-          <div className="container mx-auto px-6">
-            <div className="max-w-2xl mx-auto text-center animate-fade-up">
-              <p className="section-label justify-center mb-4">Ready to Begin?</p>
-              <h2 className="font-headline font-black text-4xl md:text-6xl text-foreground mb-5">
-                Transform Your<br />
-                <span className="text-primary">Academy Today</span>
+        {/* ── STUDENT REVIEWS ─────────────────────────────────────────── */}
+        {feedbacks.length > 0 && (
+          <section className="py-24 bg-white overflow-hidden">
+            <div className="container mx-auto px-6">
+              <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+                <div className="max-w-2xl">
+                  <p className="section-label mb-3">Student Voice</p>
+                  <h2 className="font-headline font-black text-4xl md:text-5xl text-foreground">
+                    Real Stories from <span className="text-accent">Our Community</span>
+                  </h2>
+                </div>
+                <div className="flex gap-2">
+                  <div className="p-3 bg-accent/10 rounded-full">
+                    <Star className="h-5 w-5 text-accent fill-accent" />
+                  </div>
+                  <div className="text-right">
+                    <p className="font-headline font-black text-xl">4.9/5</p>
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Average Student Rating</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {feedbacks.map((f, i) => (
+                  <div key={f.id} className={`p-8 rounded-3xl bg-neutral-surface border border-border relative group hover:border-accent/30 transition-all duration-500 animate-fade-up`} style={{ animationDelay: `${i * 100}ms` }}>
+                    <Quote className="absolute top-6 right-8 h-10 w-10 text-accent/5 group-hover:text-accent/10 transition-colors" />
+
+                    <div className="flex gap-1 mb-6">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`h-4 w-4 ${i < f.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/20'}`} />
+                      ))}
+                    </div>
+
+                    <p className="font-mono text-sm text-muted-foreground leading-relaxed mb-8 italic">
+                      "{f.content}"
+                    </p>
+
+                    <div className="flex items-center gap-4 pt-6 border-t border-dashed">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary/20 to-accent/20 flex items-center justify-center font-headline font-black text-primary">
+                        {f.studentName.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-headline font-black text-base text-foreground">{f.studentName}</p>
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Verified Student</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── FINAL CTA (Blue Grid Technical Style) ────────────────────────── */}
+        <section className="py-32 relative overflow-hidden bg-[#020617] border-t border-blue-500/10">
+          {/* Blue Technical Grid Background */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e40af1a_1px,transparent_1px),linear-gradient(to_bottom,#1e40af1a_1px,transparent_1px)] bg-[size:40px_40px] -z-10" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e40af33_1px,transparent_1px),linear-gradient(to_bottom,#1e40af33_1px,transparent_1px)] bg-[size:200px_200px] -z-10" />
+
+          {/* Deep Blue Glows */}
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_center,transparent_20%,#020617_80%)] -z-10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 blur-[120px] rounded-full -z-10 animate-pulse-slow" />
+
+          <div className="container mx-auto px-6 relative">
+            <div className="max-w-4xl mx-auto text-center space-y-10">
+
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+                <div className="w-1 h-1 bg-blue-400 rounded-full" />
+                <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-blue-400 font-bold">Protocol v2.4 </span>
+              </div>
+
+              <h2 className="font-headline font-black text-5xl md:text-8xl text-white leading-none tracking-tighter animate-fade-up">
+                ENGINEER <br />
+                <span className="text-blue-500">YOUR FUTURE</span>
               </h2>
-              <p className="font-mono text-sm text-muted-foreground mb-10 leading-relaxed">
-                Join elite institutions building their future on Campus Hub.
-                Standard deployment takes less than 5 minutes.
+
+              <p className="font-mono text-sm md:text-lg text-blue-100/40 max-w-xl mx-auto leading-relaxed uppercase tracking-wide animate-fade-up delay-150">
+                The definitive platform for institutional excellence.
+                Secure. Scalable. Absolute.
               </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                {isAuthenticated ? (
-                  <Link href={dashboardHref} className="btn-primary px-10 py-3.5 text-base rounded-xl shadow-blue">
-                    <LayoutDashboard className="h-4 w-4 mr-1.5" />
-                    Dashboard <ArrowRight className="h-4 w-4" />
-                  </Link>
-                ) : (
-                  <>
-                    <Link href="/signup" className="btn-accent px-10 py-3.5 text-base rounded-xl shadow-orange">
-                      Launch Platform <ArrowRight className="h-4 w-4" />
-                    </Link>
-                    <Link href="/login" className="btn-outline px-10 py-3.5 text-base rounded-xl">
-                      Sign In
-                    </Link>
-                  </>
-                )}
+
+              <div className="pt-12 flex flex-col items-center gap-12 animate-fade-up delay-300">
+                <Link
+                  href={isAuthenticated ? dashboardHref : "/signup"}
+                  className="group relative inline-flex items-center gap-8 text-white transition-all duration-700"
+                >
+                  {/* Decorative bracket accent */}
+                  <div className="absolute -left-12 top-1/2 -translate-y-1/2 h-16 w-px bg-blue-500/30 group-hover:h-24 group-hover:bg-blue-500 transition-all duration-700" />
+                  <div className="absolute -right-12 top-1/2 -translate-y-1/2 h-16 w-px bg-blue-500/30 group-hover:h-24 group-hover:bg-blue-500 transition-all duration-700" />
+
+                  <span className="font-headline font-black text-3xl md:text-6xl tracking-tight uppercase group-hover:scale-105 transition-transform duration-700">
+                    {isAuthenticated ? "Launch Dashboard" : "Initialize Account"}
+                  </span>
+
+                  <div className="w-16 h-16 border border-blue-500/30 flex items-center justify-center group-hover:border-blue-500 group-hover:bg-blue-500/10 transition-all duration-700">
+                    <ArrowRight className="h-8 w-8 text-blue-500" />
+                  </div>
+                </Link>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16 pt-16 border-t border-blue-500/10 w-full max-w-4xl">
+                  {[
+                    { val: '256B', label: 'ENC PROTECTION' },
+                    { val: 'ZERO', label: 'LATENCY ARCH' },
+                    { val: '99.9', label: 'UPTIME QUOTA' },
+                    { val: 'GRID', label: 'SCALE NODE' }
+                  ].map((item) => (
+                    <div key={item.label} className="text-center space-y-1 group cursor-default">
+                      <p className="font-headline font-black text-2xl text-white group-hover:text-blue-500 transition-colors">{item.val}</p>
+                      <p className="font-mono text-[8px] uppercase tracking-[0.2em] text-blue-500/50">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

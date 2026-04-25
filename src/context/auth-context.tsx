@@ -11,6 +11,8 @@ export interface UserProfile {
   lastName: string;
   email: string;
   role: UserRole;
+  enrollmentNumber?: string;
+  contactNumber?: string;
 }
 
 interface AuthContextType {

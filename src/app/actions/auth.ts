@@ -19,10 +19,12 @@ const loginSchema = z.object({
 
 const signupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(6),
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   role: z.enum(['student', 'teacher', 'administrator', 'superadmin']).default('student'),
+  enrollmentNumber: z.string().optional(),
+  contactNumber: z.string().optional(),
 });
 
 export async function loginAction(formData: FormData) {
@@ -117,11 +119,16 @@ export async function signupAction(formData: FormData) {
       return { error: 'Invalid input: ' + validated.error.errors[0].message };
     }
 
-    const { email, password, firstName, lastName, role } = validated.data;
+    const { email, password, firstName, lastName, role, enrollmentNumber, contactNumber } = validated.data;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return { error: 'Email already exists' };
+    }
+
+    if (enrollmentNumber) {
+      const existingEnrollment = await User.findOne({ enrollmentNumber });
+      if (existingEnrollment) return { error: 'Enrollment Number already in use' };
     }
 
     const hashedPassword = await bcrypt.hash(password, 12); // Increased salt rounds
@@ -130,7 +137,9 @@ export async function signupAction(formData: FormData) {
       password: hashedPassword,
       firstName,
       lastName,
-      role
+      role,
+      enrollmentNumber,
+      contactNumber
     });
 
     const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
@@ -179,13 +188,65 @@ export async function getSessionAction() {
       email: (user as any).email,
       firstName: (user as any).firstName,
       lastName: (user as any).lastName,
-      role: (user as any).role
+      role: (user as any).role,
+      enrollmentNumber: (user as any).enrollmentNumber,
+      contactNumber: (user as any).contactNumber
     };
   } catch (error: any) {
     logger.warn('Invalid session or session error', { error: error.message });
     return null;
   }
 }
+
+export async function updateProfileAction(data: { 
+  firstName: string, 
+  lastName: string, 
+  email: string, 
+  enrollmentNumber?: string, 
+  contactNumber?: string,
+  password?: string 
+}) {
+  try {
+    const session = await getSessionAction();
+    if (!session) return { success: false, error: 'Unauthorized' };
+
+    await dbConnect();
+    
+    // Check for email collision
+    if (data.email !== session.email) {
+      const existing = await User.findOne({ email: data.email });
+      if (existing) return { success: false, error: 'Email already in use' };
+    }
+
+    // Check for enrollment collision
+    if (data.enrollmentNumber && data.enrollmentNumber !== (session as any).enrollmentNumber) {
+      const existing = await User.findOne({ enrollmentNumber: data.enrollmentNumber });
+      if (existing) return { success: false, error: 'Enrollment Number already in use' };
+    }
+
+    const updateData: any = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      enrollmentNumber: data.enrollmentNumber,
+      contactNumber: data.contactNumber,
+    };
+
+    if (data.password && data.password.trim().length > 0) {
+      if (data.password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
+      updateData.password = await bcrypt.hash(data.password, 12);
+    }
+
+    await User.findByIdAndUpdate(session.id, updateData);
+    logger.info('Profile updated', { userId: session.id, email: data.email });
+    
+    return { success: true };
+  } catch (error: any) {
+    logger.error('updateProfileAction error', { error: error.message });
+    return { success: false, error: 'Profile update failed' };
+  }
+}
+
 
 export async function getStudentsAction() {
   try {
@@ -260,7 +321,7 @@ export async function createTeacherAction(data: { firstName: string, lastName: s
     await dbConnect();
     
     // Basic validation for manual data object
-    if (!data.email || !data.password || data.password.length < 8) {
+    if (!data.email || !data.password || data.password.length < 6) {
       return { success: false, error: "Invalid input data" };
     }
 
@@ -282,6 +343,49 @@ export async function createTeacherAction(data: { firstName: string, lastName: s
   }
 }
 
+export async function createStudentAction(data: { 
+  firstName: string, 
+  lastName: string, 
+  email: string, 
+  password: string,
+  enrollmentNumber: string,
+  contactNumber: string 
+}) {
+  try {
+    const session = await getSessionAction();
+    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    await dbConnect();
+    
+    if (!data.email || !data.password || data.password.length < 6) {
+      return { success: false, error: "Invalid email or password (min 6 chars)" };
+    }
+
+    const existingUser = await User.findOne({ email: data.email });
+    if (existingUser) return { success: false, error: "Email already exists" };
+
+    if (data.enrollmentNumber) {
+      const existingEnrollment = await User.findOne({ enrollmentNumber: data.enrollmentNumber });
+      if (existingEnrollment) return { success: false, error: "Enrollment Number already assigned" };
+    }
+
+    const hashedPassword = await bcrypt.hash(data.password, 12);
+    const newStudent = await User.create({
+      ...data,
+      password: hashedPassword,
+      role: 'student'
+    });
+
+    logger.security('New student created', { studentId: newStudent._id, creatorEmail: session.email });
+    return { success: true };
+  } catch (error: any) {
+    logger.error('createStudentAction error', { error: error.message });
+    return { success: false, error: error.message || 'Could not onboard student' };
+  }
+}
+
 export async function updateCoordinatorAction(coordinatorId: string, data: { firstName: string, lastName: string, email: string, password?: string }) {
   try {
     const session = await getSessionAction();
@@ -300,7 +404,7 @@ export async function updateCoordinatorAction(coordinatorId: string, data: { fir
     };
 
     if (data.password && data.password.trim().length > 0) {
-      if (data.password.length < 8) return { success: false, error: "Password too short" };
+      if (data.password.length < 6) return { success: false, error: "Password too short (min 6)" };
       updateData.password = await bcrypt.hash(data.password, 12);
     }
 

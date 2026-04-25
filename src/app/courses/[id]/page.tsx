@@ -179,14 +179,21 @@ export default function CourseDetailPage() {
               </div>
             </div>
 
-            <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
+            <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-slate-100">
               {course.thumbnail ? (
-                <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                  <BookOpen className="h-20 w-20 text-primary/20" />
-                </div>
-              )}
+                <img 
+                  src={course.thumbnail} 
+                  alt={course.title} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).parentElement!.querySelector('.fallback-icon')!.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
+              <div className={`fallback-icon w-full h-full bg-primary/10 flex items-center justify-center ${course.thumbnail ? 'hidden' : ''}`}>
+                <BookOpen className="h-20 w-20 text-primary/20" />
+              </div>
             </div>
           </div>
         </div>

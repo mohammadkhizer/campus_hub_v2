@@ -7,12 +7,13 @@ import { RouteGuard } from '@/components/route-guard';
 import { useAuth } from '@/context/auth-context';
 import { getCourseDetail, updateCourse } from '@/app/actions/courses';
 import { getUsersByRoleAction } from '@/app/actions/auth';
+import { uploadFileToCloudinary } from '@/app/actions/upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Save, Book, Users, Image as ImageIcon, Layout } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Book, Users, Image as ImageIcon, Layout, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -32,6 +33,7 @@ function EditCourseContent() {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [faculty, setFaculty] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
@@ -75,6 +77,28 @@ function EditCourseContent() {
     };
     loadData();
   }, [id, router, toast]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const data = new FormData();
+      data.append('file', file);
+      const result = await uploadFileToCloudinary(data);
+      if (result.success && result.url) {
+        setFormData(prev => ({ ...prev, thumbnail: result.url }));
+        toast({ title: "Upload Success", description: "Thumbnail updated." });
+      } else {
+        throw new Error(result.error || "Upload failed");
+      }
+    } catch (err: any) {
+      toast({ title: "Upload Error", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,6 +156,27 @@ function EditCourseContent() {
              </CardHeader>
              <CardContent className="p-6">
                <form onSubmit={handleSubmit} className="space-y-8">
+                 
+                 {/* Image Preview Section */}
+                 <div className="space-y-4">
+                    <Label>Course Image Preview</Label>
+                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center group">
+                       {formData.thumbnail ? (
+                         <img src={formData.thumbnail} alt="Preview" className="w-full h-full object-cover" />
+                       ) : (
+                         <div className="text-center p-6">
+                            <ImageIcon className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+                            <p className="text-xs text-slate-400 font-mono">No thumbnail provided</p>
+                         </div>
+                       )}
+                       {uploading && (
+                         <div className="absolute inset-0 bg-white/60 flex items-center justify-center backdrop-blur-[2px]">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                         </div>
+                       )}
+                    </div>
+                 </div>
+
                  <div className="grid md:grid-cols-2 gap-6">
                    <div className="space-y-2">
                      <Label htmlFor="title">Course Title</Label>
@@ -187,13 +232,39 @@ function EditCourseContent() {
                     </div>
                     <div className="space-y-2">
                        <Label className="flex items-center gap-2">
-                         <ImageIcon className="h-4 w-4" /> Thumbnail URL
+                         <ImageIcon className="h-4 w-4" /> Thumbnail (Upload or URL)
                        </Label>
-                       <Input 
-                         id="thumbnail" 
-                         value={formData.thumbnail}
-                         onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
-                       />
+                       <div className="flex gap-2">
+                        <Input 
+                          id="thumbnail" 
+                          placeholder="https://..." 
+                          value={formData.thumbnail}
+                          onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
+                          className="flex-grow"
+                        />
+                        <div className="relative">
+                          <input 
+                            type="file" 
+                            id="file-upload" 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={handleFileUpload}
+                            disabled={uploading}
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="icon" 
+                            asChild 
+                            className="shrink-0"
+                            disabled={uploading}
+                          >
+                            <label htmlFor="file-upload" className="cursor-pointer">
+                              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                            </label>
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                  </div>
 

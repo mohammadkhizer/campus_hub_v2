@@ -5,7 +5,9 @@ const UserSchema = new mongoose.Schema({
   lastName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['student', 'teacher', 'administrator', 'superadmin'], default: 'student' }
+  role: { type: String, enum: ['student', 'teacher', 'administrator', 'superadmin'], default: 'student' },
+  enrollmentNumber: { type: String, unique: true, sparse: true },
+  contactNumber: { type: String },
 }, { timestamps: true });
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);

@@ -71,18 +71,21 @@ export default function CoursesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredCourses.map((course) => (
               <Card key={course.id} className="group hover:shadow-xl transition-all duration-300 border-primary/10 flex flex-col h-full overflow-hidden">
-                <div className="aspect-video bg-muted relative overflow-hidden">
+                <div className="aspect-video bg-muted relative overflow-hidden flex items-center justify-center">
                   {course.thumbnail ? (
                     <img 
                       src={course.thumbnail} 
                       alt={course.title} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).parentElement!.querySelector('.fallback-icon')!.classList.remove('hidden');
+                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-primary/5">
-                      <BookOpen className="h-12 w-12 text-primary/20" />
-                    </div>
-                  )}
+                  ) : null}
+                  <div className={`fallback-icon w-full h-full bg-primary/5 flex items-center justify-center ${course.thumbnail ? 'hidden' : ''}`}>
+                    <BookOpen className="h-12 w-12 text-primary/20" />
+                  </div>
                   <div className="absolute top-3 left-3">
                     <Badge className="bg-white/90 text-primary hover:bg-white backdrop-blur-sm">New</Badge>
                   </div>

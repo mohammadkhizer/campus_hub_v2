@@ -2,14 +2,24 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
-import { BookOpen, LayoutDashboard, LogOut, GraduationCap, Loader2, Trophy, School } from 'lucide-react';
+import { LogOut, GraduationCap, Loader2 } from 'lucide-react';
+import { NAVIGATION_CONFIG, getDashboardHref, Role } from '@/config/navigation';
+import { usePathname } from 'next/navigation';
 
 export function Navbar() {
   const { profile, isAuthenticated, isLoading, signOut } = useAuth();
+  const pathname = usePathname();
+
+  const userRole = profile?.role as Role;
+
+  // Filter items based on user role
+  const allowedItems = NAVIGATION_CONFIG.filter(item => 
+    item.roles.includes(userRole)
+  );
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-border shadow-sm">
-      {/* Blue brand strip at top */}
+      {/* Brand strip */}
       <div className="h-[3px] w-full bg-gradient-to-r from-primary-dark via-primary to-blue-400" />
 
       <div className="container mx-auto px-6 h-14 flex items-center justify-between">
@@ -24,42 +34,41 @@ export function Navbar() {
           </span>
         </Link>
 
-        {/* ── Authenticated nav links ── */}
+        {/* ── Scalable Dynamic Navigation ── */}
         {isAuthenticated && !isLoading && (
           <div className="hidden md:flex items-center gap-1">
-            <Link
-              href={(profile?.role === 'administrator' || profile?.role === 'teacher') ? '/admin' : '/dashboard'}
-              className="nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-primary/5"
-            >
-              <LayoutDashboard className="h-3.5 w-3.5" />
-              Dashboard
-            </Link>
-            <Link href="/quizzes" className="nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-primary/5">
-              <BookOpen className="h-3.5 w-3.5" />
-              Quizzes
-            </Link>
-            {profile?.role === 'student' && (
-              <Link href="/dashboard/classrooms" className="nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-primary/5">
-                <School className="h-3.5 w-3.5" />
-                Classrooms
-              </Link>
-            )}
-            {(profile?.role === 'administrator' || profile?.role === 'teacher') && (
-              <Link href="/admin/classrooms" className="nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-primary/5">
-                <School className="h-3.5 w-3.5" />
-                Classrooms
-              </Link>
-            )}
-            {profile?.role === 'administrator' && (
-              <Link href="/admin/leaderboard" className="nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-primary/5">
-                <Trophy className="h-3.5 w-3.5" />
-                Leaderboard
-              </Link>
-            )}
+            {allowedItems.map((item) => {
+              // Handle special redirection logic for generic routes
+              let href = item.href;
+              if (href === '/dashboard-redirect') {
+                href = getDashboardHref(userRole);
+              }
+              if (href === '/classrooms') {
+                href = getDashboardHref(userRole); // In this app, classrooms are tabs in the dashboard
+              }
+
+              const Icon = item.icon;
+              const isActive = pathname === href;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={href}
+                  className={`nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors ${
+                    isActive 
+                      ? 'bg-primary/10 text-primary font-bold' 
+                      : 'hover:bg-primary/5 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="font-mono text-[11px] uppercase tracking-wider">{item.title}</span>
+                </Link>
+              );
+            })}
           </div>
         )}
 
-        {/* ── Right side ── */}
+        {/* ── Auth/Profile Section ── */}
         <div className="flex items-center gap-2">
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -77,13 +86,13 @@ export function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-1">
-              {/* Profile avatar chip */}
+              {/* Profile Chip */}
               <Link
                 href="/profile"
                 className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-primary/5 border border-transparent hover:border-border transition-all duration-200"
               >
                 <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center shrink-0 shadow-sm">
-                  <span className="font-mono text-[10px] font-black text-white">
+                  <span className="font-mono text-[10px] font-black text-white uppercase">
                     {profile?.firstName?.[0]}{profile?.lastName?.[0]}
                   </span>
                 </div>

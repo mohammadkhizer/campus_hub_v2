@@ -36,6 +36,8 @@ interface ProfileData {
   lastName: string;
   email: string;
   role: string;
+  enrollmentNumber?: string;
+  contactNumber?: string;
   createdAt: string;
   stats: Record<string, number>;
 }
@@ -99,7 +101,13 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '' });
+  const [form, setForm] = useState({ 
+    firstName: '', 
+    lastName: '', 
+    email: '', 
+    enrollmentNumber: '', 
+    contactNumber: '' 
+  });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -121,7 +129,13 @@ export default function ProfilePage() {
     const data = await getMyProfile();
     if (data) {
       setProfileData(data);
-      setForm({ firstName: data.firstName, lastName: data.lastName, email: data.email });
+      setForm({ 
+        firstName: data.firstName, 
+        lastName: data.lastName, 
+        email: data.email,
+        enrollmentNumber: data.enrollmentNumber || '',
+        contactNumber: data.contactNumber || ''
+      });
     }
     setLoading(false);
   };
@@ -132,6 +146,8 @@ export default function ProfilePage() {
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       email: form.email.trim(),
+      enrollmentNumber: form.enrollmentNumber.trim(),
+      contactNumber: form.contactNumber.trim(),
     });
     if (result.success) {
       toast({ title: 'Profile Updated!', description: 'Your profile details have been saved.' });
@@ -155,6 +171,8 @@ export default function ProfilePage() {
       firstName: form.firstName,
       lastName: form.lastName,
       email: form.email,
+      enrollmentNumber: form.enrollmentNumber,
+      contactNumber: form.contactNumber,
       currentPassword: passwordForm.currentPassword,
       newPassword: passwordForm.newPassword,
     });
@@ -293,6 +311,8 @@ export default function ProfilePage() {
                     { label: 'Last Name', value: profileData.lastName, icon: <User className="h-4 w-4 text-primary" /> },
                     { label: 'Email Address', value: profileData.email, icon: <Mail className="h-4 w-4 text-primary" /> },
                     { label: 'Role', value: roleConf.label, icon: roleConf.icon },
+                    ...(profileData.enrollmentNumber ? [{ label: 'Enrollment Number', value: profileData.enrollmentNumber, icon: <GraduationCap className="h-4 w-4 text-primary" /> }] : []),
+                    ...(profileData.contactNumber ? [{ label: 'Contact Number', value: profileData.contactNumber, icon: <AlertCircle className="h-4 w-4 text-primary" /> }] : []),
                   ].map((item) => (
                     <div key={item.label} className="flex items-start gap-3 p-4 bg-neutral-surface border border-border rounded-xl">
                       <div className="p-2 bg-white rounded-lg shadow-sm border border-border/50 shrink-0 mt-0.5">
@@ -379,6 +399,35 @@ export default function ProfilePage() {
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-white"
                     placeholder="your@email.com"
                   />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Enrollment Number</label>
+                  <div className="relative">
+                    <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={form.enrollmentNumber}
+                      onChange={(e) => setForm({ ...form, enrollmentNumber: e.target.value })}
+                      className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-white"
+                      placeholder="e.g. ENR-123456"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Contact Number</label>
+                  <div className="relative">
+                    <AlertCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={form.contactNumber}
+                      onChange={(e) => setForm({ ...form, contactNumber: e.target.value })}
+                      className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-white"
+                      placeholder="e.g. +1 234 567 890"
+                    />
+                  </div>
                 </div>
               </div>
 
