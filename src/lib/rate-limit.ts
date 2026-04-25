@@ -1,9 +1,9 @@
 /**
  * @fileOverview A simple rate limiting utility for Next.js Server Actions.
  *
- * In a serverless environment (like Vercel or Firebase App Hosting), a standard in-memory
+ * In a serverless environment (like Vercel), a standard in-memory
  * variable will not persist across different instances. For production use,
- * it is recommended to use Redis (e.g., Upstash) or a database (e.g., Firestore).
+ * it is recommended to use Redis (e.g., Upstash) or a database (e.g., MongoDB).
  *
  * This implementation uses an in-memory approach for demonstration/development
  * and can be easily extended to use a persistent store.

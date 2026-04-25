@@ -199,11 +199,9 @@ function QuizLeaderboardContent({ id }: { id: string }) {
                 <TableRow>
                   <TableHead className="w-[60px] text-center font-mono text-[10px] uppercase tracking-widest">Rank</TableHead>
                   <TableHead className="font-mono text-[10px] uppercase tracking-widest">Student Details</TableHead>
-                  <TableHead className="font-mono text-[10px] uppercase tracking-widest text-center">Attempted</TableHead>
-                  <TableHead className="font-mono text-[10px] uppercase tracking-widest text-center">Score (%)</TableHead>
-                  <TableHead className="font-mono text-[10px] uppercase tracking-widest text-right">Completed At</TableHead>
+                  <TableHead className="font-mono text-[10px] uppercase tracking-widest text-center">Status</TableHead>
                   {(profile?.role === 'administrator' || profile?.role === 'teacher') && (
-                    <TableHead className="w-[60px] text-right font-mono text-[10px] uppercase tracking-widest">Action</TableHead>
+                    <TableHead className="w-[120px] text-right font-mono text-[10px] uppercase tracking-widest">Actions</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
@@ -243,25 +241,18 @@ function QuizLeaderboardContent({ id }: { id: string }) {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-mono text-sm">
-                        <span className="font-bold">{attempt.attemptedCount ?? attempt.totalQuestions}</span>
-                        <span className="text-muted-foreground">/{attempt.totalQuestions}</span>
-                      </TableCell>
                       <TableCell className="text-center">
-                        <div className="inline-flex flex-col items-center">
-                          {attempt.status === 'disqualified' ? (
-                            <Badge variant="destructive" className="text-[10px] font-black animate-pulse">DQ</Badge>
-                          ) : (
-                            <>
-                              <span className={`text-lg font-black ${isFail ? 'text-destructive' : percentage >= 80 ? 'text-green-600' : 'text-blue-600'}`}>
-                                {percentage}%
-                              </span>
-                              <div className="flex items-center gap-1">
-                                <span className="text-[10px] text-muted-foreground font-mono">{attempt.score}/{attempt.totalQuestions} pts</span>
-                                {isFail && <Badge variant="destructive" className="text-[8px] h-3 px-1 leading-none uppercase font-black">FAIL</Badge>}
-                              </div>
-                            </>
-                          )}
+                        <div className="flex flex-col items-center gap-1">
+                          {attempt.status === 'disqualified' && <Badge variant="destructive" className="text-[10px] font-black uppercase">DQ</Badge>}
+                          {attempt.status === 'pending_review' && <Badge className="bg-amber-100 text-amber-700 border-none text-[10px] font-black uppercase">Pending Review</Badge>}
+                          {attempt.status === 'completed' && <Badge className="bg-emerald-100 text-emerald-700 border-none text-[10px] font-black uppercase">Completed</Badge>}
+                          
+                          <div className="flex flex-col items-center mt-1">
+                            <span className={`text-lg font-black ${isFail ? 'text-destructive' : percentage >= 80 ? 'text-green-600' : 'text-blue-600'}`}>
+                              {percentage}%
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono">{attempt.score}/{attempt.totalQuestions} pts</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -276,14 +267,26 @@ function QuizLeaderboardContent({ id }: { id: string }) {
                       </TableCell>
                       {(profile?.role === 'administrator' || profile?.role === 'teacher') && (
                         <TableCell className="text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDeleteAttempt(attempt.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 text-xs font-bold uppercase tracking-wider"
+                              asChild
+                            >
+                                <Link href={`/quizzes/attempts/${attempt.id}/review`}>
+                                    {attempt.status === 'pending_review' ? 'Grade' : 'Review'}
+                                </Link>
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteAttempt(attempt.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>

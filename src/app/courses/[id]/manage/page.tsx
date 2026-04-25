@@ -630,6 +630,7 @@ function CourseManagePage() {
                           </div>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" asChild><Link href={`/quizzes/${quiz.id}`}>Preview</Link></Button>
+                            <Button variant="outline" size="sm" asChild><Link href={`/quizzes/${quiz.id}/leaderboard`}>Results & Grading</Link></Button>
                             <Button variant="outline" size="sm" asChild><Link href={`/courses/${course.id}/quizzes/${quiz.id}/edit`}>Edit</Link></Button>
                             <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
                           </div>

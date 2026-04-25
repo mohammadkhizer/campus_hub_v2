@@ -46,20 +46,20 @@ export type GenerateQuizQuestionsInput = z.infer<
   typeof GenerateQuizQuestionsInputSchema
 >;
 
-// Output Schema
 const QuizQuestionSchema = z.object({
+  type: z.enum(['mcq', 'fill-in-the-blanks', 'short-answer', 'long-answer']).default('mcq'),
   questionText: z
     .string()
     .describe('The text of the generated quiz question.'),
   answerChoices: z
     .array(z.string())
-    .length(4)
+    .optional()
     .describe(
-      'An array of exactly 4 possible answer choices for the question.'
+      'An array of exactly 4 possible answer choices for MCQ questions.'
     ),
   correctAnswer: z
     .string()
-    .describe('The correct answer choice, which must be one of the answerChoices.'),
+    .describe('The correct answer choice or the blank value.'),
   explanation: z
     .string()
     .optional()
@@ -81,7 +81,13 @@ const generateQuizQuestionsPrompt = ai.definePrompt({
   name: 'generateQuizQuestionsPrompt',
   input: {schema: GenerateQuizQuestionsInputSchema},
   output: {schema: GenerateQuizQuestionsOutputSchema},
-  prompt: `You are an expert quiz question generator. Your task is to create {{numQuestions}} multiple-choice quiz questions based on the provided information, at a "{{difficulty}}" difficulty level.
+  prompt: `You are an expert quiz question generator. Your task is to create {{numQuestions}} quiz questions based on the provided information, at a "{{difficulty}}" difficulty level.
+  
+You can generate a mix of the following types:
+1. "mcq": Multiple choice with 4 options.
+2. "fill-in-the-blanks": A sentence with a blank.
+3. "short-answer": A question requiring a short text answer.
+4. "long-answer": A question requiring a detailed explanation.
 
 {{#if contextText}}
 Use the following text as the primary source of information:
@@ -95,12 +101,13 @@ Focus on the following topics/keywords:
 {{/if}}
 
 For each question:
-1.  Provide the "questionText".
-2.  Provide exactly 4 "answerChoices".
-3.  Indicate the "correctAnswer" which must be one of the "answerChoices".
-4.  (Optional) Provide an "explanation" for the correct answer.
+1.  Provide the "type".
+2.  Provide the "questionText".
+3.  For "mcq", provide exactly 4 "answerChoices" and the "correctAnswer".
+4.  For "fill-in-the-blanks", provide the "questionText" with a "_______" placeholder and the "correctAnswer".
+5.  For "short-answer" and "long-answer", provide the "questionText" and a model "correctAnswer".
+6.  (Optional) Provide an "explanation" for the correct answer.
 
-Ensure the questions are distinct and cover different aspects of the provided content or keywords.
 The output should be a JSON array of questions, adhering strictly to the provided output schema.`,
 });
 

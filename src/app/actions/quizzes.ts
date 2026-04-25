@@ -19,10 +19,12 @@ export async function serverGetQuizzes(adminId?: string) {
       id: q._id.toString(),
       questions: (q.questions || []).map((question: any) => ({
         id: question._id ? question._id.toString() : (question.id || Date.now().toString()),
+        type: question.type || 'mcq',
         questionText: question.questionText || '',
         answerChoices: question.options || question.answerChoices || [],
         correctAnswer: question.correctAnswer || '',
-        explanation: question.explanation || ''
+        explanation: question.explanation || '',
+        points: question.points || 1
       }))
     }));
   } catch (error) {
@@ -44,10 +46,12 @@ export async function serverGetQuiz(id: string) {
       id: serializedQuiz._id.toString(),
       questions: (serializedQuiz.questions || []).map((question: any) => ({
         id: question._id ? question._id.toString() : (question.id || Date.now().toString()),
+        type: question.type || 'mcq',
         questionText: question.questionText || '',
         answerChoices: question.options || question.answerChoices || [],
         correctAnswer: question.correctAnswer || '',
-        explanation: question.explanation || ''
+        explanation: question.explanation || '',
+        points: question.points || 1
       }))
     };
   } catch (error) {
@@ -81,10 +85,12 @@ export async function serverSaveQuiz(quiz: any) {
     
     // Proper senior-level data mapping to match Mongoose Schema
     const cleanedQuestions = (quiz.questions || []).map((q: any) => ({
+      type: q.type || 'mcq',
       questionText: q.questionText,
       options: q.answerChoices || q.options || [],
       correctAnswer: q.correctAnswer,
-      explanation: q.explanation || ''
+      explanation: q.explanation || '',
+      points: q.points || 1
     }));
 
     const cleanData = {
@@ -145,6 +151,7 @@ export async function serverGetAttempts(studentId: string) {
     await dbConnect();
     const attempts = await AttemptModel.find({ student: studentId })
       .populate('student', 'firstName lastName email enrollmentNumber')
+      .populate('quiz', 'title')
       .sort({ completedAt: -1 })
       .lean();
     return JSON.parse(JSON.stringify(attempts)).map((a: any) => ({
@@ -153,6 +160,7 @@ export async function serverGetAttempts(studentId: string) {
       studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
       studentEmail: a.student?.email || 'N/A',
       studentEnrollment: a.student?.enrollmentNumber || 'N/A',
+      quizTitle: a.quiz?.title || 'Unknown Quiz',
       attemptedCount: a.answers ? Object.keys(a.answers).length : 0
     }));
   } catch (error) {
@@ -166,6 +174,7 @@ export async function serverGetAllAttempts() {
     await dbConnect();
     const attempts = await AttemptModel.find({})
       .populate('student', 'firstName lastName email enrollmentNumber')
+      .populate('quiz', 'title')
       .sort({ completedAt: -1 })
       .lean();
     return JSON.parse(JSON.stringify(attempts)).map((a: any) => ({
@@ -174,6 +183,7 @@ export async function serverGetAllAttempts() {
       studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
       studentEmail: a.student?.email || 'N/A',
       studentEnrollment: a.student?.enrollmentNumber || 'N/A',
+      quizTitle: a.quiz?.title || 'Unknown Quiz',
       attemptedCount: a.answers ? Object.keys(a.answers).length : 0
     }));
   } catch (error) {
@@ -215,5 +225,48 @@ export async function serverDeleteAttempt(attemptId: string) {
   } catch (error) {
     console.error('Error deleting attempt:', error);
     return { success: false, error: "Failed to delete attempt" };
+  }
+}
+
+export async function serverGradeAttempt(attemptId: string, score: number, feedback: string) {
+  try {
+    const session = await getSessionAction();
+    if (!session || (session.role !== 'teacher' && session.role !== 'administrator')) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    await dbConnect();
+    await AttemptModel.findByIdAndUpdate(attemptId, { 
+      score, 
+      feedback, 
+      status: 'completed' 
+    });
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error grading attempt:', e);
+    return { success: false, error: e.message };
+  }
+}
+
+export async function serverGetAttempt(attemptId: string) {
+  try {
+    await dbConnect();
+    const attempt = await AttemptModel.findById(attemptId)
+      .populate('student', 'firstName lastName email enrollmentNumber')
+      .lean();
+    
+    if (!attempt) return null;
+
+    const data = JSON.parse(JSON.stringify(attempt));
+    return {
+      ...data,
+      id: data._id.toString(),
+      studentName: data.student ? `${data.student.firstName} ${data.student.lastName}` : 'Unknown',
+      studentEmail: data.student?.email || 'N/A',
+      studentEnrollment: data.student?.enrollmentNumber || 'N/A'
+    };
+  } catch (error) {
+    console.error('Error fetching attempt:', error);
+    return null;
   }
 }

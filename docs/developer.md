@@ -36,7 +36,6 @@ Located at `src/middleware.ts`, it handles:
 ## Important Files
 - `next.config.ts`: Next.js configuration.
 - `tailwind.config.ts`: Custom theme, colors, and animations.
-- `firestore.rules`: Security rules if Firebase services are utilized.
 - `.env`: Environment variables (Template should be followed).
 
 ## Development Guidelines

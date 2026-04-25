@@ -1,3 +1,5 @@
+'use server';
+
 import { Quiz, QuizAttempt } from './types';
 import { serverGetQuizzes, serverGetQuiz, serverSaveQuiz, serverDeleteQuiz, serverGetAttempts, serverSaveAttempt, serverGetAllAttempts, serverGetQuizAttempts, serverDeleteAttempt } from '@/app/actions/quizzes';
 import { serverSubmitFeedback, serverGetFeedbacks, serverGetDisplayedFeedbacks, serverUpdateFeedbackStatus, serverDeleteFeedback } from '@/app/actions/feedback';

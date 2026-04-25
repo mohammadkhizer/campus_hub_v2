@@ -31,9 +31,11 @@ import Link from 'next/link';
 
 interface Question {
   id: string;
+  type: 'mcq' | 'fill-in-the-blanks' | 'short-answer' | 'long-answer';
   questionText: string;
   answerChoices: string[];
   correctAnswer: string;
+  points: number;
 }
 
 export default function EditQuizPage() {
@@ -57,7 +59,7 @@ export default function EditQuizPage() {
   });
 
   const [questions, setQuestions] = useState<Question[]>([
-    { id: '1', questionText: '', answerChoices: ['', '', '', ''], correctAnswer: '' }
+    { id: '1', type: 'mcq', questionText: '', answerChoices: ['', '', '', ''], correctAnswer: '', points: 1 }
   ]);
 
   // AI Generation State
@@ -86,10 +88,12 @@ export default function EditQuizPage() {
 
           if (quiz.questions && quiz.questions.length > 0) {
              setQuestions(quiz.questions.map((q: any) => ({
-               id: q.id,
+               id: q.id || Math.random().toString(36).substr(2, 9),
+               type: q.type || 'mcq',
                questionText: q.questionText,
-               answerChoices: [...q.answerChoices, '', '', '', ''].slice(0, 4) as string[],
-               correctAnswer: q.correctAnswer
+               answerChoices: q.answerChoices && q.answerChoices.length > 0 ? [...q.answerChoices, '', '', ''].slice(0, 4) : ['', '', '', ''],
+               correctAnswer: q.correctAnswer || '',
+               points: q.points || 1
              })));
           }
         } else {
@@ -107,9 +111,11 @@ export default function EditQuizPage() {
   const addQuestion = () => {
     setQuestions([...questions, { 
       id: Date.now().toString(), 
+      type: 'mcq',
       questionText: '', 
       answerChoices: ['', '', '', ''], 
-      correctAnswer: '' 
+      correctAnswer: '',
+      points: 1
     }]);
   };
 
@@ -141,8 +147,8 @@ export default function EditQuizPage() {
         return;
     }
 
-    if (questions.some(q => !q.questionText || !q.correctAnswer)) {
-        toast({ title: "Incomplete Questions", description: "Please fill all question texts and select correct answers.", variant: "destructive" });
+    if (questions.some(q => !q.questionText || (q.type === 'mcq' && !q.correctAnswer))) {
+        toast({ title: "Incomplete Questions", description: "Please fill all question texts and select correct answers for MCQs.", variant: "destructive" });
         return;
     }
 
@@ -178,9 +184,11 @@ export default function EditQuizPage() {
         const count = parseInt(questionCount);
         const generated: Question[] = Array.from({ length: count }).map((_, i) => ({
             id: `ai-${Date.now()}-${i}`,
+            type: 'mcq',
             questionText: `Generated Question about ${aiTopic} #${i+1}?`,
             answerChoices: [`Correct answer for ${aiTopic}`, `Wrong option B`, `Wrong option C`, `Wrong option D`],
-            correctAnswer: `Correct answer for ${aiTopic}`
+            correctAnswer: `Correct answer for ${aiTopic}`,
+            points: 1
         }));
         setQuestions([...questions, ...generated]);
         setMode('manual'); // Switch to manual to allow review
@@ -330,55 +338,94 @@ export default function EditQuizPage() {
 
                 {/* Manual Mode */}
                 <TabsContent value="manual" className="space-y-6">
-                   {questions.map((q, qIndex) => (
-                     <Card key={q.id} className="relative overflow-hidden border-2 border-transparent hover:border-primary/20 transition-all">
-                        <div className="absolute top-0 left-0 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Q{qIndex + 1}</div>
-                        <CardHeader className="pt-8 flex flex-row justify-between items-start">
-                           <div className="flex-1">
-                              <Textarea 
-                                placeholder="Enter your question text here..." 
-                                className="text-lg font-medium border-none shadow-none focus-visible:ring-0 px-0 min-h-[60px]"
-                                value={q.questionText}
-                                onChange={(e) => updateQuestion(q.id, 'questionText', e.target.value)}
-                              />
-                           </div>
-                           <Button 
-                             variant="ghost" 
-                             size="icon" 
-                             className="text-destructive hover:bg-destructive/10"
-                             onClick={() => removeQuestion(q.id)}
-                             disabled={questions.length === 1}
-                           >
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                           <div className="grid md:grid-cols-2 gap-4">
-                              {q.answerChoices.map((choice, cIndex) => (
-                                <div key={cIndex} className="flex items-center gap-2 group">
-                                   <div 
-                                     className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 cursor-pointer transition-all ${
-                                       q.correctAnswer === choice && choice !== '' 
-                                       ? 'bg-green-600 border-green-600 text-white' 
-                                       : 'bg-slate-50 text-slate-400 group-hover:border-primary/40'
-                                     }`}
-                                     onClick={() => choice !== '' && updateQuestion(q.id, 'correctAnswer', choice)}
-                                     title="Set as correct answer"
-                                   >
-                                     {String.fromCharCode(65 + cIndex)}
-                                   </div>
+                    {questions.map((q, qIndex) => (
+                      <Card key={q.id} className="relative overflow-hidden border-2 border-transparent hover:border-primary/20 transition-all">
+                         <div className="absolute top-0 left-0 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">Q{qIndex + 1}</div>
+                         <CardHeader className="pt-8 flex flex-row justify-between items-start gap-4">
+                            <div className="flex-1 space-y-4">
+                               <div className="flex items-center gap-4">
+                                 <Select 
+                                   value={q.type} 
+                                   onValueChange={(v: any) => updateQuestion(q.id, 'type', v)}
+                                 >
+                                   <SelectTrigger className="w-[180px] bg-white">
+                                     <SelectValue placeholder="Question Type" />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     <SelectItem value="mcq">Multiple Choice</SelectItem>
+                                     <SelectItem value="fill-in-the-blanks">Fill in Blanks</SelectItem>
+                                     <SelectItem value="short-answer">Short Answer</SelectItem>
+                                     <SelectItem value="long-answer">Long Answer</SelectItem>
+                                   </SelectContent>
+                                 </Select>
+                                 <div className="flex items-center gap-2">
+                                   <Label className="text-xs uppercase font-bold text-muted-foreground">Points</Label>
                                    <Input 
-                                     placeholder={`Option ${String.fromCharCode(65 + cIndex)}`}
-                                     value={choice}
-                                     onChange={(e) => updateChoice(q.id, cIndex, e.target.value)}
-                                     className="bg-slate-50 border-slate-200"
+                                     type="number" 
+                                     className="w-16 h-8" 
+                                     value={q.points} 
+                                     onChange={(e) => updateQuestion(q.id, 'points', parseInt(e.target.value))}
                                    />
-                                </div>
-                              ))}
-                           </div>
-                        </CardContent>
-                     </Card>
-                   ))}
+                                 </div>
+                               </div>
+                               <Textarea 
+                                 placeholder={q.type === 'fill-in-the-blanks' ? "Enter text with _______ for blank..." : "Enter your question text here..."}
+                                 className="text-lg font-medium border-none shadow-none focus-visible:ring-0 px-0 min-h-[60px]"
+                                 value={q.questionText}
+                                 onChange={(e) => updateQuestion(q.id, 'questionText', e.target.value)}
+                               />
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => removeQuestion(q.id)}
+                              disabled={questions.length === 1}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                         </CardHeader>
+                         <CardContent className="space-y-4">
+                            {q.type === 'mcq' ? (
+                              <div className="grid md:grid-cols-2 gap-4">
+                                 {q.answerChoices.map((choice, cIndex) => (
+                                   <div key={cIndex} className="flex items-center gap-2 group">
+                                      <div 
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 cursor-pointer transition-all ${
+                                          q.correctAnswer === choice && choice !== '' 
+                                          ? 'bg-green-600 border-green-600 text-white' 
+                                          : 'bg-slate-50 text-slate-400 group-hover:border-primary/40'
+                                        }`}
+                                        onClick={() => choice !== '' && updateQuestion(q.id, 'correctAnswer', choice)}
+                                        title="Set as correct answer"
+                                      >
+                                        {String.fromCharCode(65 + cIndex)}
+                                      </div>
+                                      <Input 
+                                        placeholder={`Option ${String.fromCharCode(65 + cIndex)}`}
+                                        value={choice}
+                                        onChange={(e) => updateChoice(q.id, cIndex, e.target.value)}
+                                        className="bg-slate-50 border-slate-200"
+                                      />
+                                   </div>
+                                 ))}
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <Label className="text-xs uppercase font-bold text-muted-foreground">
+                                  {q.type === 'fill-in-the-blanks' ? 'Correct Word(s)' : 'Model Answer (Optional for long-answer)'}
+                                </Label>
+                                <Input 
+                                  placeholder={q.type === 'fill-in-the-blanks' ? "The word that fills the blank" : "What should the student write?"}
+                                  value={q.correctAnswer}
+                                  onChange={(e) => updateQuestion(q.id, 'correctAnswer', e.target.value)}
+                                  className="bg-slate-50 border-slate-200"
+                                />
+                              </div>
+                            )}
+                         </CardContent>
+                      </Card>
+                    ))}
                    
                    <Button 
                      variant="outline" 

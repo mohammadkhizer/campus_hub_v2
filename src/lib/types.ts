@@ -1,10 +1,13 @@
+export type QuestionType = 'mcq' | 'fill-in-the-blanks' | 'short-answer' | 'long-answer';
 
 export interface Question {
   id: string;
+  type: QuestionType;
   questionText: string;
-  answerChoices: string[];
-  correctAnswer: string;
+  answerChoices?: string[]; // Only for MCQ
+  correctAnswer?: string; // Optional for long-answer
   explanation?: string;
+  points?: number;
 }
 
 export interface Quiz {
@@ -32,8 +35,9 @@ export interface QuizAttempt {
   totalQuestions: number;
   attemptedCount?: number;
   completedAt: string;
-  status: 'completed' | 'disqualified';
+  status: 'completed' | 'disqualified' | 'pending_review';
   answers: Record<string, string>;
+  feedback?: string;
 }
 
 export interface Note {

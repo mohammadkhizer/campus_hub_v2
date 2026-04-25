@@ -26,22 +26,25 @@ function StudentContent() {
   const [classrooms, setClassrooms] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
   const [deadlines, setDeadlines] = useState<any[]>([]);
+  const [recentAttempts, setRecentAttempts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     if (!profile) return;
     setLoading(true);
     try {
-      const [coursesData, classroomData, metricsData, deadlineData] = await Promise.all([
+      const [coursesData, classroomData, metricsData, deadlineData, attemptsData] = await Promise.all([
         getCourses(),
         getStudentClassrooms(profile.id),
         getStudentMetricsAction(),
-        getStudentDeadlinesAction()
+        getStudentDeadlinesAction(),
+        import('@/lib/store').then(m => m.getAttempts(profile.id))
       ]);
       setCourses(coursesData);
       setClassrooms(classroomData);
       setMetrics(metricsData);
       setDeadlines(deadlineData);
+      setRecentAttempts(attemptsData.slice(0, 3));
     } catch (err) {
       console.error("Load error:", err);
     } finally {
@@ -257,6 +260,50 @@ function StudentContent() {
                 )}
                 <Button variant="ghost" className="w-full text-xs font-bold uppercase tracking-widest rounded-none border-t border-border h-10" asChild>
                   <Link href="/quizzes">View Schedule</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Recent Quizzes */}
+            <Card>
+              <CardHeader className="pb-3 border-b border-border bg-neutral-surface">
+                <CardTitle className="text-sm font-black flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-accent" /> Recent Quizzes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {loading ? (
+                   <div className="p-8 flex justify-center"><Loader2 className="h-4 w-4 animate-spin" /></div>
+                ) : recentAttempts.length > 0 ? (
+                  <div className="divide-y divide-border">
+                    {recentAttempts.map((attempt) => (
+                      <div key={attempt.id} className="p-4 hover:bg-neutral-surface transition-colors cursor-pointer group flex justify-between items-center">
+                        <div>
+                          <p className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-1">{attempt.quizTitle || 'Quiz'}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                            {new Date(attempt.completedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          {attempt.status === 'pending_review' ? (
+                            <Badge className="bg-amber-100 text-amber-700 border-none text-[9px] font-black uppercase">Pending</Badge>
+                          ) : (
+                            <p className="font-mono text-sm font-black text-primary">
+                              {Math.round((attempt.score / attempt.totalQuestions) * 100)}%
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <Trophy className="h-5 w-5 text-muted-foreground mx-auto mb-2 opacity-20" />
+                    <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">No quizzes taken yet</p>
+                  </div>
+                )}
+                <Button variant="ghost" className="w-full text-xs font-bold uppercase tracking-widest rounded-none border-t border-border h-10" asChild>
+                  <Link href="/quizzes">Take a Quiz</Link>
                 </Button>
               </CardContent>
             </Card>

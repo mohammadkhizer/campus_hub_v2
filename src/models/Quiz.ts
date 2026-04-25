@@ -11,11 +11,13 @@ const QuizSchema = new mongoose.Schema({
   isPublished: { type: Boolean, default: false },
   password: { type: String, default: '' },
   questions: [{
+    type: { type: String, enum: ['mcq', 'fill-in-the-blanks', 'short-answer', 'long-answer'], default: 'mcq' },
     questionText: { type: String, required: true },
-    imageUrl: { type: String }, // For question diagrams/images
-    options: [{ type: String, required: true }],
-    correctAnswer: { type: String, required: true },
-    explanation: { type: String }
+    imageUrl: { type: String },
+    options: [{ type: String }], // Optional for non-MCQ
+    correctAnswer: { type: String }, // Optional for long-answer
+    explanation: { type: String },
+    points: { type: Number, default: 1 }
   }]
 }, { timestamps: true });
 
