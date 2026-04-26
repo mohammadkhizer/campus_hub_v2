@@ -239,9 +239,11 @@ export async function serverGetQuizAttempts(quizId: string) {
       .populate('student', 'firstName lastName email enrollmentNumber')
       .sort({ score: -1, completedAt: 1 })
       .lean();
-    return JSON.parse(JSON.stringify(attempts)).map((a: any) => ({
+      
+    const dtoAttempts = toDTO<any[]>(attempts);
+
+    return dtoAttempts.map((a: any) => ({
       ...a,
-      id: a._id.toString(),
       studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
       studentEmail: a.student?.email || 'N/A',
       studentEnrollment: a.student?.enrollmentNumber || 'N/A',
@@ -297,10 +299,9 @@ export async function serverGetAttempt(attemptId: string) {
     
     if (!attempt) return null;
 
-    const data = JSON.parse(JSON.stringify(attempt));
+    const data = toDTO<any>(attempt);
     return {
       ...data,
-      id: data._id.toString(),
       studentName: data.student ? `${data.student.firstName} ${data.student.lastName}` : 'Unknown',
       studentEmail: data.student?.email || 'N/A',
       studentEnrollment: data.student?.enrollmentNumber || 'N/A'

@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
 import { env } from '@/lib/env';
+import { toDTO } from '@/lib/dto';
 
 const JWT_SECRET = env.JWT_SECRET;
 
@@ -282,10 +283,7 @@ export async function getUsersByRoleAction(roles: string[]) {
 
     await dbConnect();
     const users = await User.find({ role: { $in: roles } }).select('-password').lean();
-    return JSON.parse(JSON.stringify(users)).map((u: any) => ({
-      ...u,
-      id: u._id.toString()
-    }));
+    return toDTO<any[]>(users);
   } catch (error: any) {
     logger.error('getUsersByRoleAction error', { error: error.message });
     return [];

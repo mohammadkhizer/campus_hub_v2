@@ -6,6 +6,7 @@ import CourseModel from '@/models/Course';
 import UserModel from '@/models/User';
 import { getSessionAction } from '@/app/actions/auth';
 import { revalidatePath } from 'next/cache';
+import { toDTO } from '@/lib/dto';
 
 /**
  * Fetch all classrooms with populated student/course counts.
@@ -30,13 +31,14 @@ export async function getClassrooms() {
     .sort({ createdAt: -1 })
     .populate('createdBy', 'firstName lastName')
     .lean();
+    
+  const dtoClassrooms = toDTO<any[]>(classrooms);
 
-  return JSON.parse(JSON.stringify(classrooms)).map((c: any) => ({
+  return dtoClassrooms.map((c: any) => ({
     ...c,
-    id: c._id.toString(),
     studentIds: (c.students || []).map((s: any) => s.toString()),
     courseIds: (c.courses || []).map((co: any) => co.toString()),
-    createdByName: c.createdBy ? `${c.createdBy.firstName} ${c.createdBy.lastName}` : 'System',
+    createdByName: c.createdByName || (c.createdBy ? `${c.createdBy.firstName} ${c.createdBy.lastName}` : 'System'),
   }));
 }
 
@@ -53,14 +55,15 @@ export async function getClassroomDetail(id: string) {
 
   if (!classroom) return null;
 
+  const dto = toDTO<any>(classroom);
+
   return {
-    ...JSON.parse(JSON.stringify(classroom)),
-    id: classroom._id.toString(),
-    studentIds: (classroom.students || []).map((s: any) => (s._id || s).toString()),
-    courseIds: (classroom.courses || []).map((c: any) => (c._id || c).toString()),
-    populatedStudents: JSON.parse(JSON.stringify(classroom.students || [])).map((s: any) => ({ ...s, id: (s._id || s).toString() })),
-    populatedCourses: JSON.parse(JSON.stringify(classroom.courses || [])).map((c: any) => ({ ...c, id: (c._id || c).toString() })),
-    createdByName: classroom.createdBy ? `${(classroom.createdBy as any).firstName} ${(classroom.createdBy as any).lastName}` : 'System',
+    ...dto,
+    studentIds: (dto.students || []).map((s: any) => (s.id || s).toString()),
+    courseIds: (dto.courses || []).map((c: any) => (c.id || c).toString()),
+    populatedStudents: (dto.students || []).map((s: any) => ({ ...s, id: (s.id || s).toString() })),
+    populatedCourses: (dto.courses || []).map((c: any) => ({ ...c, id: (c.id || c).toString() })),
+    createdByName: dto.createdBy ? `${dto.createdBy.firstName} ${dto.createdBy.lastName}` : 'System',
   };
 }
 
