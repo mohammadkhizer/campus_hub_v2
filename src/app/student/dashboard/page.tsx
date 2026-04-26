@@ -14,10 +14,29 @@ import { Loader2, BookOpen, School, ArrowRight, GraduationCap, Trophy, Activity,
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 
-// Lazy load heavy components
 const Navbar = dynamic(() => import('@/components/navbar').then(mod => mod.Navbar), {
   loading: () => <div className="h-14 bg-white border-b border-border animate-pulse" />,
   ssr: false
+});
+
+const MetricsWidget = dynamic(() => import('@/components/dashboard/MetricsWidget').then(mod => mod.MetricsWidget), {
+  loading: () => <div className="h-40 bg-white rounded-2xl border border-border animate-pulse" />
+});
+
+const DeadlinesWidget = dynamic(() => import('@/components/dashboard/DeadlinesWidget').then(mod => mod.DeadlinesWidget), {
+  loading: () => <div className="h-40 bg-white rounded-2xl border border-border animate-pulse" />
+});
+
+const RecentQuizzesWidget = dynamic(() => import('@/components/dashboard/RecentQuizzesWidget').then(mod => mod.RecentQuizzesWidget), {
+  loading: () => <div className="h-40 bg-white rounded-2xl border border-border animate-pulse" />
+});
+
+const CoursesSection = dynamic(() => import('@/components/dashboard/CoursesSection').then(mod => mod.CoursesSection), {
+  loading: () => <div className="h-80 bg-white rounded-2xl border border-border animate-pulse" />
+});
+
+const ClassroomsSection = dynamic(() => import('@/components/dashboard/ClassroomsSection').then(mod => mod.ClassroomsSection), {
+  loading: () => <div className="h-60 bg-white rounded-2xl border border-border animate-pulse" />
 });
 
 function StudentContent() {
@@ -103,210 +122,23 @@ function StudentContent() {
           <div className="lg:col-span-2 space-y-8 animate-fade-up delay-150">
             
             {/* Courses Section */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-headline font-black text-xl text-foreground flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-primary" /> Active Courses
-                </h2>
-                <Button variant="ghost" className="text-primary text-xs font-mono font-bold uppercase" asChild>
-                  <Link href="/courses">View All <ArrowRight className="ml-1 h-3 w-3" /></Link>
-                </Button>
-              </div>
-
-              {loading ? (
-                <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-              ) : courses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {courses.slice(0, 4).map((course) => (
-                    <Card key={course.id} className="group hover:border-primary/50 transition-all duration-300 overflow-hidden">
-                      <div className="h-2 bg-primary" />
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <p className="font-mono text-[10px] font-bold text-accent uppercase tracking-widest">{course.code}</p>
-                          <Badge variant="outline" className="text-[9px] uppercase">Enrolled</Badge>
-                        </div>
-                        <CardTitle className="text-lg line-clamp-1">{course.title}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-4 leading-relaxed">{course.description}</p>
-                        <Button className="w-full text-xs font-mono font-bold uppercase tracking-widest h-9" asChild>
-                          <Link href={`/courses/${course.id}`}>Open Course</Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <Card className="p-10 text-center border-dashed border-2">
-                  <div className="w-12 h-12 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <BookOpen className="h-6 w-6 text-primary/40" />
-                  </div>
-                  <h3 className="font-headline font-bold text-lg mb-1">No Active Courses</h3>
-                  <p className="text-sm text-muted-foreground mb-6">You are not enrolled in any courses yet.</p>
-                  <Button variant="outline" asChild><Link href="/courses">Browse Library</Link></Button>
-                </Card>
-              )}
-            </section>
+            <CoursesSection courses={courses} loading={loading} />
 
             {/* Classrooms Section */}
-            <section>
-              <h2 className="font-headline font-black text-xl text-foreground flex items-center gap-2 mb-4">
-                <School className="h-5 w-5 text-accent" /> My Classrooms
-              </h2>
-              <div className="grid grid-cols-1 gap-4">
-                {classrooms.map((cls) => (
-                  <Card key={cls.id} className="group hover:shadow-md transition-all border-l-4 border-l-accent">
-                    <CardHeader className="py-4">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                            <School className="h-5 w-5 text-accent" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-base">{cls.name}</CardTitle>
-                            <p className="text-xs text-muted-foreground">Coordinator: {cls.createdByName}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs font-mono">
-                          <div className="text-right">
-                            <p className="font-bold text-foreground">{cls.courseCount}</p>
-                            <p className="text-muted-foreground uppercase text-[9px]">Courses</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-foreground">{cls.studentCount}</p>
-                            <p className="text-muted-foreground uppercase text-[9px]">Peers</p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
-                {classrooms.length === 0 && !loading && (
-                  <Card className="p-8 text-center bg-muted/30">
-                    <p className="text-sm text-muted-foreground font-mono">No classroom assignments found.</p>
-                  </Card>
-                )}
-              </div>
-            </section>
+            <ClassroomsSection classrooms={classrooms} loading={loading} />
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6 animate-fade-up delay-300">
             
             {/* Activity Metrics */}
-            <Card className="bg-white shadow-sm border-border overflow-hidden">
-              <div className="bg-neutral-surface px-5 py-3 border-b border-border">
-                <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Activity Metrics</h3>
-              </div>
-              <CardContent className="p-5 space-y-4">
-                {loading ? (
-                   <div className="space-y-3">
-                     {[1,2,3].map(i => <div key={i} className="h-4 bg-muted animate-pulse rounded" />)}
-                   </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-blue-50 rounded-lg"><Trophy className="h-4 w-4 text-primary" /></div>
-                        <span className="text-xs font-medium">Quiz Rank</span>
-                      </div>
-                      <span className="font-mono text-sm font-black">{metrics?.quizRank || '#--'}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-green-50 rounded-lg"><Activity className="h-4 w-4 text-success" /></div>
-                        <span className="text-xs font-medium">Attendance</span>
-                      </div>
-                      <span className="font-mono text-sm font-black text-success">{metrics?.attendance || '98%'}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-accent/10 rounded-lg"><Calendar className="h-4 w-4 text-accent" /></div>
-                        <span className="text-xs font-medium">Tasks Due</span>
-                      </div>
-                      <span className="font-mono text-sm font-black text-accent">{metrics?.tasksDue || '00'}</span>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <MetricsWidget metrics={metrics} loading={loading} />
 
             {/* Upcoming Deadlines */}
-            <Card>
-              <CardHeader className="pb-3 border-b border-border bg-neutral-surface">
-                <CardTitle className="text-sm font-black flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-destructive" /> Deadlines
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {loading ? (
-                   <div className="p-8 flex justify-center"><Loader2 className="h-4 w-4 animate-spin" /></div>
-                ) : deadlines.length > 0 ? (
-                  <div className="divide-y divide-border">
-                    {deadlines.map((d) => (
-                      <div key={d.id} className="p-4 hover:bg-neutral-surface transition-colors cursor-pointer group">
-                        <p className={`text-[10px] font-mono font-bold uppercase tracking-widest mb-1 ${d.isUrgent ? 'text-destructive' : 'text-muted-foreground'}`}>
-                          {d.timeLeft}
-                        </p>
-                        <p className="text-sm font-medium group-hover:text-primary transition-colors">{d.title}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center">
-                    <AlertCircle className="h-5 w-5 text-muted-foreground mx-auto mb-2 opacity-20" />
-                    <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">No upcoming deadlines</p>
-                  </div>
-                )}
-                <Button variant="ghost" className="w-full text-xs font-bold uppercase tracking-widest rounded-none border-t border-border h-10" asChild>
-                  <Link href="/quizzes">View Schedule</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <DeadlinesWidget deadlines={deadlines} loading={loading} />
 
             {/* Recent Quizzes */}
-            <Card>
-              <CardHeader className="pb-3 border-b border-border bg-neutral-surface">
-                <CardTitle className="text-sm font-black flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-accent" /> Recent Quizzes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {loading ? (
-                   <div className="p-8 flex justify-center"><Loader2 className="h-4 w-4 animate-spin" /></div>
-                ) : recentAttempts.length > 0 ? (
-                  <div className="divide-y divide-border">
-                    {recentAttempts.map((attempt) => (
-                      <div key={attempt.id} className="p-4 hover:bg-neutral-surface transition-colors cursor-pointer group flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-1">{attempt.quizTitle || 'Quiz'}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                            {new Date(attempt.completedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          {attempt.status === 'pending_review' ? (
-                            <Badge className="bg-amber-100 text-amber-700 border-none text-[9px] font-black uppercase">Pending</Badge>
-                          ) : (
-                            <p className="font-mono text-sm font-black text-primary">
-                              {Math.round((attempt.score / attempt.totalQuestions) * 100)}%
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center">
-                    <Trophy className="h-5 w-5 text-muted-foreground mx-auto mb-2 opacity-20" />
-                    <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">No quizzes taken yet</p>
-                  </div>
-                )}
-                <Button variant="ghost" className="w-full text-xs font-bold uppercase tracking-widest rounded-none border-t border-border h-10" asChild>
-                  <Link href="/quizzes">Take a Quiz</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <RecentQuizzesWidget attempts={recentAttempts} loading={loading} />
 
             {/* Shortcut Card */}
             <div className="rounded-2xl p-6 bg-gradient-to-br from-accent to-orange-600 text-white shadow-premium">

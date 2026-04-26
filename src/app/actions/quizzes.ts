@@ -6,27 +6,30 @@ import AttemptModel from '@/models/Attempt';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { getSessionAction } from '@/app/actions/auth';
 import CourseModel from '@/models/Course';
+import { toDTO } from '@/lib/dto';
 
 export async function serverGetQuizzes(adminId?: string) {
   try {
+    const session = await getSessionAction();
     await dbConnect();
+    
     let query = adminId ? { adminId } : { isPublished: true };
     const quizzes = await QuizModel.find(query).sort({ createdAt: -1 }).lean();
     
-    // Deep serialize to handle nested ObjectIds (especially in questions array)
-    return JSON.parse(JSON.stringify(quizzes)).map((q: any) => ({
-      ...q,
-      id: q._id.toString(),
-      questions: (q.questions || []).map((question: any) => ({
-        id: question._id ? question._id.toString() : (question.id || Date.now().toString()),
-        type: question.type || 'mcq',
-        questionText: question.questionText || '',
-        answerChoices: question.options || question.answerChoices || [],
-        correctAnswer: question.correctAnswer || '',
-        explanation: question.explanation || '',
-        points: question.points || 1
-      }))
-    }));
+    return quizzes.map((q: any) => {
+      const dto = toDTO<any>(q);
+      const isStudent = session?.role === 'student';
+      
+      return {
+        ...dto,
+        questions: (dto.questions || []).map((question: any) => ({
+          ...question,
+          // Hide sensitive fields from students
+          correctAnswer: isStudent ? undefined : question.correctAnswer,
+          explanation: isStudent ? undefined : question.explanation,
+        }))
+      };
+    });
   } catch (error) {
     console.error('Error fetching quizzes:', error);
     return [];
@@ -35,23 +38,22 @@ export async function serverGetQuizzes(adminId?: string) {
 
 export async function serverGetQuiz(id: string) {
   try {
+    const session = await getSessionAction();
     await dbConnect();
+    
     const quiz = await QuizModel.findById(id).lean();
     if (!quiz) return null;
     
-    // Deep serialize to handle nested ObjectIds in questions array
-    const serializedQuiz = JSON.parse(JSON.stringify(quiz));
+    const dto = toDTO<any>(quiz);
+    const isStudent = session?.role === 'student';
+
     return {
-      ...serializedQuiz,
-      id: serializedQuiz._id.toString(),
-      questions: (serializedQuiz.questions || []).map((question: any) => ({
-        id: question._id ? question._id.toString() : (question.id || Date.now().toString()),
-        type: question.type || 'mcq',
-        questionText: question.questionText || '',
-        answerChoices: question.options || question.answerChoices || [],
-        correctAnswer: question.correctAnswer || '',
-        explanation: question.explanation || '',
-        points: question.points || 1
+      ...dto,
+      questions: (dto.questions || []).map((question: any) => ({
+        ...question,
+        // Hide sensitive fields from students
+        correctAnswer: isStudent ? undefined : question.correctAnswer,
+        explanation: isStudent ? undefined : question.explanation,
       }))
     };
   } catch (error) {
@@ -100,6 +102,7 @@ export async function serverSaveQuiz(quiz: any) {
       difficulty: quiz.difficulty || 'medium',
       timeLimit: Number(quiz.timeLimitMinutes) || 0,
       isPublished: quiz.published === undefined ? true : !!quiz.published,
+      activityMonitoring: quiz.activityMonitoring === undefined ? true : !!quiz.activityMonitoring,
       password: quiz.password || '',
       questions: cleanedQuestions,
       generationType: quiz.generationType || 'manual'
@@ -129,20 +132,59 @@ export async function serverDeleteQuiz(id: string) {
   }
 }
 
-export async function serverSaveAttempt(attempt: any) {
+export async function serverSaveAttempt(attemptData: any) {
   try {
+    const session = await getSessionAction();
+    if (!session) return { success: false, error: "Authentication required" };
+
     await dbConnect();
-    const { id, ...data } = attempt;
-    await AttemptModel.create({
-      ...data,
-      quiz: data.quizId,
-      student: data.studentId,
-      completedAt: new Date(data.completedAt)
+    
+    // 1. Verify Attempt Ownership
+    if (session.role === 'student' && attemptData.studentId !== session.id) {
+      return { success: false, error: "Security Violation: Cannot submit on behalf of another user." };
+    }
+
+    // 2. Fetch the actual quiz to calculate the score (DO NOT TRUST CLIENT SCORE)
+    const quiz = await QuizModel.findById(attemptData.quizId).lean();
+    if (!quiz) return { success: false, error: "Quiz not found" };
+
+    // 3. Re-calculate score on the server
+    let serverCalculatedScore = 0;
+    const clientAnswers = attemptData.answers || {};
+
+    quiz.questions.forEach((q: any) => {
+      const qId = q._id.toString();
+      const userAnswer = (clientAnswers[qId] || "").trim().toLowerCase();
+      const correctAnswer = (q.correctAnswer || "").trim().toLowerCase();
+
+      if (q.type === 'mcq' || q.type === 'fill-in-the-blanks') {
+        if (userAnswer === correctAnswer) {
+          serverCalculatedScore += (q.points || 1);
+        }
+      }
+      // For short/long answers, we keep status as 'pending' if needed, 
+      // but for now, we follow existing logic.
     });
-    return { success: true };
+
+    // 4. Create the attempt record with server-side data
+    const attempt = await AttemptModel.create({
+      quiz: attemptData.quizId,
+      student: attemptData.studentId,
+      score: serverCalculatedScore,
+      totalQuestions: quiz.questions.length,
+      answers: clientAnswers,
+      status: attemptData.status || 'completed',
+      completedAt: new Date()
+    });
+
+    return { 
+      success: true, 
+      id: attempt._id.toString(),
+      score: serverCalculatedScore 
+    };
   } catch (error) {
     console.error('Error saving attempt:', error);
-    throw error;
+    return { success: false, error: "Failed to save attempt securely" };
   }
 }
 
@@ -154,9 +196,8 @@ export async function serverGetAttempts(studentId: string) {
       .populate('quiz', 'title')
       .sort({ completedAt: -1 })
       .lean();
-    return JSON.parse(JSON.stringify(attempts)).map((a: any) => ({
+    return toDTO<any>(attempts).map((a: any) => ({
       ...a,
-      id: a._id.toString(),
       studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
       studentEmail: a.student?.email || 'N/A',
       studentEnrollment: a.student?.enrollmentNumber || 'N/A',
@@ -177,9 +218,8 @@ export async function serverGetAllAttempts() {
       .populate('quiz', 'title')
       .sort({ completedAt: -1 })
       .lean();
-    return JSON.parse(JSON.stringify(attempts)).map((a: any) => ({
+    return toDTO<any>(attempts).map((a: any) => ({
       ...a,
-      id: a._id.toString(),
       studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
       studentEmail: a.student?.email || 'N/A',
       studentEnrollment: a.student?.enrollmentNumber || 'N/A',

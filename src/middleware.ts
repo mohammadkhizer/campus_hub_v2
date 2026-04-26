@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-// import { checkRateLimit } from './lib/rate-limit';
+import { checkRateLimit } from './lib/rate-limit';
 
 export async function middleware(request: NextRequest) {
   // 1. Apply Security Headers
@@ -10,13 +10,15 @@ export async function middleware(request: NextRequest) {
   // Adjust this based on your external scripts/styles needs
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval';
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data: https://placehold.co https://images.unsplash.com https://picsum.photos;
-    font-src 'self' data:;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.gstatic.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    img-src 'self' blob: data: https://placehold.co https://images.unsplash.com https://picsum.photos https://lh3.googleusercontent.com;
+    font-src 'self' data: https://fonts.gstatic.com;
+    frame-src 'self' https://accounts.google.com;
+    connect-src 'self' https://accounts.google.com;
     object-src 'none';
     base-uri 'self';
-    form-action 'self';
+    form-action 'self' https://accounts.google.com;
     frame-ancestors 'none';
     upgrade-insecure-requests;
   `.replace(/\s{2,}/g, ' ').trim();
@@ -26,9 +28,8 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocations=()');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-  /*
   // 2. Global Rate Limiting for API and Actions
   if (request.nextUrl.pathname.startsWith('/api') || request.headers.get('next-action')) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
@@ -44,7 +45,6 @@ export async function middleware(request: NextRequest) {
       });
     }
   }
-  */
 
   return response;
 }

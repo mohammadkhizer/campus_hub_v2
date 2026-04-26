@@ -22,6 +22,7 @@ export interface Quiz {
   timeLimit?: number;
   isPublished: boolean;
   password?: string;
+  activityMonitoring?: boolean;
 }
 
 export interface QuizAttempt {

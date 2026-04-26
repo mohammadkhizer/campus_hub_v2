@@ -382,7 +382,7 @@ export default function LandingPage() {
           </div>
           <div className="border-t border-border pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="font-mono text-[11px] text-muted-foreground">
-              © 2024 Campus Hub Cloud Services. All rights reserved.
+              © {new Date().getFullYear()} Campus Hub Cloud Services. All rights reserved.
             </p>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-all cursor-pointer">

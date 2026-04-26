@@ -7,10 +7,14 @@ import { GraduationCap, Loader2, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lu
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import Link from 'next/link';
-import { signupAction } from '@/app/actions/auth';
+import { signupAction, googleLoginAction } from '@/app/actions/auth';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { motion } from 'framer-motion';
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
 export default function SignupPage() {
-  const { isAuthenticated, isLoading, profile, refreshSession } = useAuth();
+  const { isAuthenticated, isLoading, profile, refreshSession, signOut } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -50,6 +54,25 @@ export default function SignupPage() {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (credentialResponse.credential) {
+      setLoading(true);
+      try {
+        const result = await googleLoginAction(credentialResponse.credential);
+        if (result.error) {
+          toast({ variant: "destructive", title: "Google Login Failed", description: result.error });
+        } else {
+          toast({ title: "Account linked!", description: "Successfully signed in with Google." });
+          await refreshSession();
+        }
+      } catch {
+        toast({ variant: "destructive", title: "Login Failed", description: "An unexpected error occurred." });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex flex-col">
@@ -61,7 +84,31 @@ export default function SignupPage() {
     );
   }
 
-  if (isAuthenticated) return null;
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-neutral-surface flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-white p-10 rounded-2xl border border-border shadow-premium max-w-sm w-full opacity-100 visible">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+            <h2 className="font-headline font-black text-xl mb-2 text-foreground">Already signed in</h2>
+            <p className="text-muted-foreground text-sm mb-6 font-mono uppercase tracking-wider">Redirecting to your dashboard...</p>
+            <button 
+              onClick={() => {
+                console.log('Signing out...');
+                signOut().catch(err => console.error('Sign out error:', err));
+              }}
+              className="text-xs text-primary hover:underline font-bold uppercase tracking-widest cursor-pointer relative z-50"
+            >
+              Sign out to use a different account
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-surface flex flex-col">
@@ -72,7 +119,12 @@ export default function SignupPage() {
         <div className="absolute inset-0 bg-dot-grid opacity-60 -z-10" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-primary/6 to-transparent -z-10" />
 
-        <div className="w-full max-w-sm animate-fade-up">
+        <motion.div 
+          className="w-full max-w-sm"
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
 
           {/* Card */}
           <div className="bg-white rounded-2xl border border-border shadow-premium overflow-hidden">
@@ -211,6 +263,32 @@ export default function SignupPage() {
                 </button>
               </form>
 
+              {/* Google Auth */}
+              {GOOGLE_CLIENT_ID && (
+                <>
+                  <div className="relative my-5">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-border"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="bg-white px-2 text-muted-foreground font-mono uppercase tracking-widest text-[10px]">Or</span>
+                    </div>
+                  </div>
+                  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                    <div className="flex justify-center w-full">
+                      <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => toast({ variant: "destructive", title: "Signup Failed", description: "Google signup failed." })}
+                        theme="outline"
+                        size="large"
+                        width="100%"
+                        text="signup_with"
+                      />
+                    </div>
+                  </GoogleOAuthProvider>
+                </>
+              )}
+
               {/* Footer */}
               <div className="mt-6 pt-5 border-t border-border text-center">
                 <p className="font-mono text-xs text-muted-foreground">
@@ -228,7 +306,7 @@ export default function SignupPage() {
             <ShieldCheck className="h-3.5 w-3.5 text-success" />
             <span className="font-mono text-[10px] uppercase tracking-widest">Secured · AES-256 Encrypted</span>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

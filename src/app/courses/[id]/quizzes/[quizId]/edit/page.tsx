@@ -23,10 +23,12 @@ import {
   Loader2, 
   CheckCircle,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  ShieldAlert
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 
 interface Question {
@@ -55,7 +57,8 @@ export default function EditQuizPage() {
     description: '',
     timeLimitMinutes: '30',
     difficulty: 'medium',
-    password: ''
+    password: '',
+    activityMonitoring: true
   });
 
   const [questions, setQuestions] = useState<Question[]>([
@@ -83,7 +86,8 @@ export default function EditQuizPage() {
             description: quiz.description || '',
             timeLimitMinutes: quiz.timeLimit?.toString() || '30',
             difficulty: quiz.difficulty || 'medium',
-            password: quiz.password || ''
+            password: quiz.password || '',
+            activityMonitoring: quiz.activityMonitoring !== false
           });
 
           if (quiz.questions && quiz.questions.length > 0) {
@@ -266,6 +270,21 @@ export default function EditQuizPage() {
                                     <SelectItem value="hard">Advanced</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-2 pt-2 border-t">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <div className="space-y-0.5">
+                            <Label className="text-sm font-bold flex items-center gap-2">
+                              <ShieldAlert className="h-4 w-4 text-primary" />
+                              Activity Monitor
+                            </Label>
+                            <p className="text-[10px] text-muted-foreground">Block tab switching & copy-paste</p>
+                          </div>
+                          <Switch 
+                            checked={quizDetails.activityMonitoring}
+                            onCheckedChange={(checked) => setQuizDetails({...quizDetails, activityMonitoring: checked})}
+                          />
                         </div>
                     </div>
                     <div className="space-y-2 pt-2 border-t">

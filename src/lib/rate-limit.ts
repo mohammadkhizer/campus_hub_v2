@@ -1,23 +1,20 @@
-/**
- * @fileOverview A simple rate limiting utility for Next.js Server Actions.
- *
- * In a serverless environment (like Vercel), a standard in-memory
- * variable will not persist across different instances. For production use,
- * it is recommended to use Redis (e.g., Upstash) or a database (e.g., MongoDB).
- *
- * This implementation uses an in-memory approach for demonstration/development
- * and can be easily extended to use a persistent store.
- */
-
 import { headers } from 'next/headers';
+import { Redis } from '@upstash/redis';
+import { env } from './env';
+
+const redis = env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: env.UPSTASH_REDIS_REST_URL,
+      token: env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
 
 type RateLimitEntry = {
   count: number;
   resetTime: number;
 };
 
-// Internal cache for rate limiting (in-memory)
-// Note: This only works for a single instance.
+// Internal cache for rate limiting (in-memory fallback)
 const rateLimitCache = new Map<string, RateLimitEntry>();
 
 interface RateLimitConfig {
@@ -25,12 +22,6 @@ interface RateLimitConfig {
   windowMs: number;  // Time window in milliseconds
 }
 
-/**
- * Checks if a request should be rate-limited.
- * @param config The rate limit configuration.
- * @param identifier Optional identifier (e.g., IP address). If not provided, it tries to get it from headers.
- * @returns {Promise<{ success: boolean; limit: number; remaining: number; reset: number }>}
- */
 export async function checkRateLimit(
   config: RateLimitConfig = { limit: 10, windowMs: 60 * 1000 },
   identifier?: string
@@ -42,13 +33,46 @@ export async function checkRateLimit(
       const headersList = await headers();
       ip = headersList.get('x-forwarded-for') || 'anonymous';
     } catch (e) {
-      // If headers() is called in Middleware, it will throw.
-      // In that case, the caller MUST provide an identifier.
       ip = 'anonymous-fallback';
     }
   }
 
   const now = Date.now();
+
+  // UPSTASH REDIS APPROACH
+  if (redis) {
+    try {
+      const key = `ratelimit:${ip}`;
+      
+      const [response] = await redis.pipeline()
+        .incr(key)
+        .pexpire(key, config.windowMs)
+        .exec();
+      
+      const count = Number(response);
+      
+      if (count > config.limit) {
+        return {
+          success: false,
+          limit: config.limit,
+          remaining: 0,
+          reset: Math.ceil(config.windowMs / 1000), // simplistic reset
+        };
+      }
+
+      return {
+        success: true,
+        limit: config.limit,
+        remaining: config.limit - count,
+        reset: Math.ceil(config.windowMs / 1000),
+      };
+    } catch (error) {
+      console.warn(`[RateLimit] Redis failed for ${ip}. Falling back to memory.`, error);
+      // Fall through to memory approach if redis throws
+    }
+  }
+
+  // MEMORY FALLBACK APPROACH
   let entry = rateLimitCache.get(ip);
 
   // If no entry exists or the window has expired, reset

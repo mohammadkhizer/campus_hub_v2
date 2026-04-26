@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Loader2, BookOpen, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -73,14 +74,12 @@ export default function CoursesPage() {
               <Card key={course.id} className="group hover:shadow-xl transition-all duration-300 border-primary/10 flex flex-col h-full overflow-hidden">
                 <div className="aspect-video bg-muted relative overflow-hidden flex items-center justify-center">
                   {course.thumbnail ? (
-                    <img 
+                    <Image 
                       src={course.thumbnail} 
                       alt={course.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        (e.target as HTMLImageElement).parentElement!.querySelector('.fallback-icon')!.classList.remove('hidden');
-                      }}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   ) : null}
                   <div className={`fallback-icon w-full h-full bg-primary/5 flex items-center justify-center ${course.thumbnail ? 'hidden' : ''}`}>

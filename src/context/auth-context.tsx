@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getSessionAction, logoutAction } from '@/app/actions/auth';
+import { useRouter } from 'next/navigation';
 
 export type UserRole = 'student' | 'teacher' | 'administrator' | 'superadmin' | null;
 
@@ -33,6 +34,7 @@ export function AuthProvider({
   initialProfile?: UserProfile | null;
 }) {
   const [profile, setProfile] = useState<UserProfile | null>(initialProfile);
+  const router = useRouter();
   // If initialProfile is provided by SSR, start in a non-loading state
   const [isLoading, setIsLoading] = useState(false);
 
@@ -54,9 +56,18 @@ export function AuthProvider({
   }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
-    await logoutAction();
+    console.log('[AuthContext] Initiating sign out...');
+    try {
+      await logoutAction();
+      console.log('[AuthContext] Cookie cleared via logoutAction');
+    } catch (error) {
+      console.error('[AuthContext] Error during logoutAction:', error);
+    }
     setProfile(null);
-  }, []);
+    console.log('[AuthContext] Local profile cleared');
+    router.push('/login');
+    router.refresh(); // Force a refresh to update server-side state if needed
+  }, [router]);
 
   return (
     <AuthContext.Provider

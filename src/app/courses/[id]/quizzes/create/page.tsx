@@ -13,6 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from '@/components/ui/switch';
+import Link from 'next/link';
 import { 
   Plus, 
   Trash2, 
@@ -23,11 +27,9 @@ import {
   Loader2, 
   CheckCircle,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  ShieldAlert
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import Link from 'next/link';
 
 interface Question {
   id: string;
@@ -54,7 +56,8 @@ export default function CreateQuizPage() {
     description: '',
     timeLimitMinutes: '30',
     difficulty: 'medium',
-    password: ''
+    password: '',
+    activityMonitoring: true
   });
 
   const [questions, setQuestions] = useState<Question[]>([
@@ -234,6 +237,21 @@ export default function CreateQuizPage() {
                                     <SelectItem value="hard">Advanced</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-2 pt-2 border-t">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <div className="space-y-0.5">
+                            <Label className="text-sm font-bold flex items-center gap-2">
+                              <ShieldAlert className="h-4 w-4 text-primary" />
+                              Activity Monitor
+                            </Label>
+                            <p className="text-[10px] text-muted-foreground">Block tab switching & copy-paste</p>
+                          </div>
+                          <Switch 
+                            checked={quizDetails.activityMonitoring}
+                            onCheckedChange={(checked) => setQuizDetails({...quizDetails, activityMonitoring: checked})}
+                          />
                         </div>
                     </div>
                     <div className="space-y-2 pt-2 border-t">

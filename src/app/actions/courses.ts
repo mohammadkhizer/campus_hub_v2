@@ -12,6 +12,7 @@ import { getSessionAction } from '@/app/actions/auth';
 import { revalidatePath } from 'next/cache';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { toDTO } from '@/lib/dto';
 
 const CourseSchema = z.object({
   title: z.string().min(3),
@@ -47,10 +48,7 @@ export async function getCourses() {
     }
 
     const courses = await CourseModel.find(query).sort({ createdAt: -1 }).lean();
-    return JSON.parse(JSON.stringify(courses)).map((c: any) => ({
-      ...c,
-      id: c._id || c.id,
-    }));
+    return toDTO<any>(courses);
   } catch (error) {
     console.error('Error fetching courses:', error);
     return [];
@@ -93,13 +91,12 @@ export async function getCourseDetail(courseId: string) {
 
     // High-performance mapping for clean client-side hydration
     const courseDetail = {
-      ...JSON.parse(JSON.stringify(course)),
-      id: course._id.toString(),
+      ...toDTO<any>(course),
       facultyName,
-      notes: JSON.parse(JSON.stringify(notes)).map((n: any) => ({ ...n, id: n._id.toString() })),
-      quizzes: JSON.parse(JSON.stringify(quizzes)).map((q: any) => ({ ...q, id: q._id.toString() })),
-      assignments: JSON.parse(JSON.stringify(assignments)).map((a: any) => ({ ...a, id: a._id.toString() })),
-      announcements: JSON.parse(JSON.stringify(announcements)).map((an: any) => ({ ...an, id: an._id.toString() })),
+      notes: toDTO<any>(notes),
+      quizzes: toDTO<any>(quizzes),
+      assignments: toDTO<any>(assignments),
+      announcements: toDTO<any>(announcements),
     };
 
     return courseDetail;
@@ -290,10 +287,7 @@ export async function getEnrolledCourses(studentId: string) {
     const enrollments = await EnrollmentModel.find({ student: studentId }).lean();
     const courseIds = enrollments.map((e: any) => e.course);
     const courses = await CourseModel.find({ _id: { $in: courseIds } }).lean();
-    return JSON.parse(JSON.stringify(courses)).map((c: any) => ({
-      ...c,
-      id: c._id,
-    }));
+    return toDTO<any>(courses);
   } catch (error) {
     console.error('Error fetching enrolled courses:', error);
     return [];

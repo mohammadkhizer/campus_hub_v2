@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Save, Book, Users, Image as ImageIcon, Layout, Upload } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Select, 
@@ -124,7 +125,7 @@ function CreateCourseContent() {
                    <Label>Course Image Preview</Label>
                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center group">
                       {formData.thumbnail ? (
-                        <img src={formData.thumbnail} alt="Preview" className="w-full h-full object-cover" />
+                        <Image src={formData.thumbnail} alt="Preview" fill className="object-cover" />
                       ) : (
                         <div className="text-center p-6">
                            <ImageIcon className="h-10 w-10 text-slate-300 mx-auto mb-2" />

@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Trophy, Home, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Trophy, Home, Lock, Eye, EyeOff, AlertTriangle, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -93,7 +93,7 @@ function TakeQuizContent({ id }: { id: string }) {
 
   // Activity Monitor (Anti-Cheat)
   useEffect(() => {
-    if (!quiz || isLocked || isSubmitted || isCheated || isPreview) return;
+    if (!quiz || isLocked || isSubmitted || isCheated || isPreview || quiz.activityMonitoring === false) return;
 
     const handleSecurityBreach = () => {
       if (!isCheated && !isSubmitted) {
@@ -456,7 +456,14 @@ function TakeQuizContent({ id }: { id: string }) {
         <div className="mb-8 space-y-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-headline font-bold text-primary">{quiz.title}</h1>
-            <Badge variant="outline">{currentQuestionIndex + 1} of {quiz.questions.length}</Badge>
+            <div className="flex items-center gap-2">
+              {quiz.activityMonitoring !== false && (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 gap-1">
+                  <ShieldAlert className="h-3 w-3" /> Monitor Active
+                </Badge>
+              )}
+              <Badge variant="outline">{currentQuestionIndex + 1} of {quiz.questions.length}</Badge>
+            </div>
           </div>
           <Progress value={progress} className="h-2" />
         </div>

@@ -79,7 +79,7 @@ export async function loginAction(formData: FormData) {
       return { error: 'Server configuration error' };
     }
 
-    const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user._id.toString(), pv: user.passwordVersion || 0 }, JWT_SECRET, { expiresIn: '7d' });
     
     console.log('Setting cookie...');
     const cookieStore = await cookies();
@@ -142,7 +142,7 @@ export async function signupAction(formData: FormData) {
       contactNumber
     });
 
-    const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user._id.toString(), pv: user.passwordVersion || 0 }, JWT_SECRET, { expiresIn: '7d' });
     const cookieStore = await cookies();
     cookieStore.set('authToken', token, { 
       httpOnly: true, 
@@ -180,9 +180,14 @@ export async function getSessionAction() {
 
     if (!token) return null;
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; pv?: number };
     const user = await User.findById(decoded.userId).select('-password').lean();
     if (!user) return null;
+    
+    // Revoke zombie sessions if password changed
+    if ((user as any).passwordVersion !== undefined && decoded.pv !== undefined) {
+      if ((user as any).passwordVersion > decoded.pv) return null;
+    }
     return {
       id: (user as any)._id.toString(),
       email: (user as any).email,
@@ -235,6 +240,7 @@ export async function updateProfileAction(data: {
     if (data.password && data.password.trim().length > 0) {
       if (data.password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
       updateData.password = await bcrypt.hash(data.password, 12);
+      updateData.$inc = { passwordVersion: 1 };
     }
 
     await User.findByIdAndUpdate(session.id, updateData);
@@ -441,5 +447,51 @@ export async function deleteCoordinatorAction(coordinatorId: string) {
   } catch (error: any) {
     logger.error('deleteCoordinatorAction error', { error: error.message });
     return { success: false, error: "Deletion failed" };
+  }
+}
+
+import { OAuth2Client } from 'google-auth-library';
+export async function googleLoginAction(credential: string) {
+  try {
+    const rateLimit = await checkRateLimit({ limit: 5, windowMs: 60 * 1000 });
+    if (!rateLimit.success) return { error: 'Rate limit exceeded' };
+
+    await dbConnect();
+    const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) return { error: 'Invalid Google token' };
+    
+    let user = await User.findOne({ email: payload.email });
+    
+    if (!user) {
+      user = await User.create({
+        email: payload.email,
+        firstName: payload.given_name || 'Google User',
+        lastName: payload.family_name || '',
+        authProvider: 'google',
+        role: 'student',
+      });
+    }
+
+    const token = jwt.sign({ userId: user._id.toString(), pv: user.passwordVersion || 0 }, JWT_SECRET, { expiresIn: '7d' });
+    const cookieStore = await cookies();
+    cookieStore.set('authToken', token, { 
+      httpOnly: true, 
+      secure: env.NODE_ENV === 'production', 
+      path: '/', 
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: 'strict'
+    });
+
+    logger.info('User logged in via Google', { userId: user._id, email: payload.email });
+    return { success: true };
+  } catch (error: any) {
+    logger.error('Google login error', { error: error.message });
+    return { error: 'Google login failed' };
   }
 }

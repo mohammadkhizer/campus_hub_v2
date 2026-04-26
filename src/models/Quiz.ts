@@ -9,6 +9,7 @@ const QuizSchema = new mongoose.Schema({
   difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
   timeLimit: { type: Number, default: 0 }, // minutes
   isPublished: { type: Boolean, default: false },
+  activityMonitoring: { type: Boolean, default: true },
   password: { type: String, default: '' },
   questions: [{
     type: { type: String, enum: ['mcq', 'fill-in-the-blanks', 'short-answer', 'long-answer'], default: 'mcq' },

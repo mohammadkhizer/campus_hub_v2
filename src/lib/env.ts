@@ -6,6 +6,9 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   ENCRYPTION_KEY: z.string().min(32),
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
