@@ -86,7 +86,7 @@ export default function LandingPage() {
               <div className="animate-fade-up delay-600 pt-8 border-t border-border">
                 <p className="section-label justify-center mb-5">Trusted by academic leaders worldwide</p>
                 <div className="flex flex-wrap justify-center items-center gap-8 md:gap-14">
-                  {['SVGU University', 'Tech Institute', 'Global Academy', 'Edu-Systems'].map((name) => (
+                  {['crescent University', 'Tech Institute', 'Global Academy', 'Edu-Systems'].map((name) => (
                     <span key={name} className="font-headline font-black text-sm text-foreground/20 hover:text-foreground/50 transition-colors uppercase tracking-widest cursor-default">
                       {name}
                     </span>
