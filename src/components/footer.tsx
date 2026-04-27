@@ -79,9 +79,43 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-muted-foreground font-mono">
-            &copy; {currentYear} Campus Hub Institution. All rights reserved.
-          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-muted-foreground font-mono">
+              &copy; {currentYear} Campus Hub Institution. All rights reserved.
+            </p>
+            {/* Launch badge */}
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                width: 'fit-content',
+                padding: '3px 10px',
+                borderRadius: '999px',
+                background: 'linear-gradient(90deg, #3b82f620 0%, #6366f120 100%)',
+                border: '1px solid #6366f140',
+                fontSize: '11px',
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                letterSpacing: '0.02em',
+                color: '#6366f1',
+              }}
+            >
+              <span style={{ fontSize: '13px' }}>🚀</span>
+              Launched on 10 April 2026
+            </span>
+            <p className="text-[10px] text-muted-foreground font-mono font-bold">
+              Developed by{' '}
+              <a
+                href="https://mohammedkhizershaikh.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline transition-colors"
+              >
+                Shaikh Mohammed Khizer
+              </a>
+            </p>
+          </div>
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
               <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
