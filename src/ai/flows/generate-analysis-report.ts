@@ -63,8 +63,8 @@ const generateAnalysisReportFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await generateAnalysisReportPrompt({
-        stats: JSON.stringify(input.stats, null, 2),
-        recentLogs: JSON.stringify(input.recentLogs, null, 2)
+        stats: input.stats,
+        recentLogs: input.recentLogs
     });
     return output!;
   }
