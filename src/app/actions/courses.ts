@@ -13,6 +13,48 @@ import { revalidatePath } from 'next/cache';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { toDTO } from '@/lib/dto';
+import { sendEmail, generateUpdateTemplate } from '@/lib/mail-service';
+
+/**
+ * Helper to notify all students in classrooms assigned to a course
+ */
+export async function notifyStudentsInCourse(courseId: string, type: 'Assignment' | 'Quiz' | 'Note' | 'Announcement', title: string, description?: string) {
+  try {
+    const Classroom = (await import('@/models/Classroom')).default;
+    const User = (await import('@/models/User')).default;
+    
+    // 1. Get Course Info
+    const course = await CourseModel.findById(courseId).select('title').lean();
+    if (!course) return;
+
+    // 2. Find all classrooms mapped to this course
+    const classrooms = await Classroom.find({ courses: courseId }).populate('students', 'email').lean();
+    
+    // 3. Extract unique student emails
+    const emails = new Set<string>();
+    classrooms.forEach((cls: any) => {
+      cls.students.forEach((student: any) => {
+        if (student.email) emails.add(student.email);
+      });
+    });
+
+    if (emails.size === 0) return;
+
+    // 4. Send Email
+    const recipientList = Array.from(emails);
+    const html = generateUpdateTemplate(type, course.title, title, description);
+    
+    await sendEmail({
+      to: recipientList,
+      subject: `New ${type} in ${course.title}: ${title}`,
+      html
+    });
+
+    logger.info('Student notifications sent', { courseId, type, recipientCount: recipientList.length });
+  } catch (error: any) {
+    logger.error('Failed to notify students', { error: error.message, courseId });
+  }
+}
 
 const CourseSchema = z.object({
   title: z.string().min(3),
@@ -179,6 +221,10 @@ export async function saveNote(data: { courseId: string; title: string; descript
     }
 
     await NoteModel.create({ ...data, course: data.courseId, fileType: 'pdf' });
+    
+    // Background notification
+    notifyStudentsInCourse(data.courseId, 'Note', data.title, data.description);
+
     revalidatePath(`/courses/${data.courseId}`);
     return { success: true };
   } catch (error: any) {
@@ -201,6 +247,10 @@ export async function saveAnnouncement(data: { courseId: string; title: string; 
     }
 
     await AnnouncementModel.create({ ...data, course: data.courseId, postedBy: session.id });
+    
+    // Background notification
+    notifyStudentsInCourse(data.courseId, 'Announcement', data.title, data.content);
+
     revalidatePath(`/courses/${data.courseId}`);
     return { success: true };
   } catch (error: any) {
@@ -223,6 +273,10 @@ export async function saveAssignment(data: { courseId: string; title: string; de
     }
 
     await AssignmentModel.create({ ...data, course: data.courseId });
+    
+    // Background notification
+    notifyStudentsInCourse(data.courseId, 'Assignment', data.title, data.description);
+
     revalidatePath(`/courses/${data.courseId}`);
     return { success: true };
   } catch (error: any) {
@@ -234,11 +288,24 @@ export async function saveAssignment(data: { courseId: string; title: string; de
 export async function submitAssignment(data: { assignmentId: string; studentId: string; studentName: string; fileUrl: string }) {
   try {
     await dbConnect();
+    
+    const assignment = await AssignmentModel.findById(data.assignmentId).lean();
+    if (!assignment) {
+      return { success: false, error: "Assignment not found" };
+    }
+
+    const now = new Date();
+    const deadline = new Date(assignment.deadline);
+
+    if (now > deadline) {
+      return { success: false, error: "The deadline for this assignment has passed. Submissions are no longer accepted." };
+    }
+
     await SubmissionModel.create({ ...data, assignment: data.assignmentId, student: data.studentId });
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error submitting assignment:', error);
-    return { success: false };
+    return { success: false, error: error.message || "Failed to submit assignment" };
   }
 }
 
@@ -246,7 +313,7 @@ export async function getSubmissions(assignmentId: string) {
   try {
     await dbConnect();
     const submissions = await SubmissionModel.find({ assignment: assignmentId }).sort({ createdAt: -1 }).lean();
-    return submissions.map((s: any) => ({ ...s, id: s._id.toString() }));
+    return toDTO<any>(submissions);
   } catch (error) {
     console.error('Error fetching submissions:', error);
     return [];

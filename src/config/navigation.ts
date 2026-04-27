@@ -11,7 +11,8 @@ import {
   Calendar,
   Megaphone,
   UserCircle,
-  MessageSquare
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
 
 export type Role = 'student' | 'teacher' | 'administrator' | 'superadmin';
@@ -64,6 +65,12 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     title: 'Complaint Box',
     href: '/student/complaints',
     icon: Megaphone,
+    roles: ['student'],
+  },
+  {
+    title: 'AI Assistant',
+    href: '/student/ai',
+    icon: Sparkles,
     roles: ['student'],
   },
   {

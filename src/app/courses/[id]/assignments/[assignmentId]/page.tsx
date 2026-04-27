@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, UploadCloud, FileText, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, ArrowLeft, UploadCloud, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { uploadFileToCloudinary } from '@/app/actions/upload';
 import { submitAssignment, getSubmissions, getCourseDetail } from '@/app/actions/courses';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 
 export default function AssignmentDetailPage() {
@@ -126,6 +127,7 @@ export default function AssignmentDetailPage() {
   }
 
   const isTeacher = profile?.role === 'teacher' || profile?.role === 'administrator' || profile?.role === 'superadmin';
+  const isDeadlinePassed = assignment && new Date() > new Date(assignment.deadline);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -145,9 +147,10 @@ export default function AssignmentDetailPage() {
                 <CardTitle className="text-3xl font-headline text-primary mb-2">
                   {assignment.title}
                 </CardTitle>
-                <CardDescription className="flex items-center gap-2 text-base">
+                <CardDescription className={`flex items-center gap-2 text-base ${isDeadlinePassed ? 'text-destructive font-bold' : ''}`}>
                   <Clock className="h-4 w-4" /> 
                   Due: <span className="font-semibold">{new Date(assignment.deadline).toLocaleString()}</span>
+                  {isDeadlinePassed && <Badge variant="destructive" className="ml-2">Deadline Passed</Badge>}
                 </CardDescription>
               </div>
             </div>
@@ -172,7 +175,7 @@ export default function AssignmentDetailPage() {
 
         {/* Student View: Submit Work */}
         {!isTeacher && (
-          <Card>
+          <Card className={isDeadlinePassed && !mySubmission ? 'border-destructive/20' : ''}>
             <CardHeader>
               <CardTitle>Your Submission</CardTitle>
             </CardHeader>
@@ -195,6 +198,17 @@ export default function AssignmentDetailPage() {
                       <p><strong>Feedback:</strong> {mySubmission.feedback}</p>
                     </div>
                   )}
+                </div>
+              ) : isDeadlinePassed ? (
+                <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-6 text-center space-y-4">
+                  <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+                  <div>
+                    <h3 className="font-bold text-destructive text-lg">Deadline Passed</h3>
+                    <p className="text-sm text-muted-foreground">The deadline for this assignment was {new Date(assignment.deadline).toLocaleString()}. Submissions are no longer accepted.</p>
+                  </div>
+                  <Button variant="outline" disabled className="mt-2">
+                    Submission Closed
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-4">

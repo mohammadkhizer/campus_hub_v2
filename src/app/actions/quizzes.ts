@@ -7,6 +7,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { getSessionAction } from '@/app/actions/auth';
 import CourseModel from '@/models/Course';
 import { toDTO } from '@/lib/dto';
+import { notifyStudentsInCourse } from './courses';
 
 export async function serverGetQuizzes(adminId?: string) {
   try {
@@ -112,6 +113,10 @@ export async function serverSaveQuiz(quiz: any) {
       await QuizModel.findByIdAndUpdate(quiz.id, cleanData, { new: true });
     } else {
       await QuizModel.create(cleanData);
+      // Background notification only for new quizzes
+      if (cleanData.isPublished) {
+        notifyStudentsInCourse(cleanData.course, 'Quiz', cleanData.title, cleanData.description);
+      }
     }
     
     return { success: true };

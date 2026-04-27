@@ -35,7 +35,7 @@ export async function loginAction(formData: FormData) {
   try {
     // 1. Rate Limiting
     console.log('Checking rate limit...');
-    const rateLimit = await checkRateLimit({ limit: 5, windowMs: 60 * 1000 });
+    const rateLimit = await checkRateLimit({ limit: 20, windowMs: 60 * 1000 });
     if (!rateLimit.success) {
       console.log('Rate limit exceeded');
       return { error: `Too many attempts. Try again in ${rateLimit.reset} seconds.` };

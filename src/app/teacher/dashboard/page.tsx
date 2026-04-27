@@ -7,11 +7,15 @@ import { useAuth } from '@/context/auth-context';
 import { getCourses, updateCourseStatus } from '@/app/actions/courses';
 import { getClassrooms } from '@/app/actions/classrooms';
 import { getStudentsAction, createStudentAction } from '@/app/actions/auth';
+import { getTeacherSubmissions, updateSubmissionStatusAction } from '@/app/actions/teacher';
 import { Course } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Loader2, Eye, Power, BookOpen, Pencil, Layout, School, Users, UserPlus, Mail, Hash, Phone, Trophy } from 'lucide-react';
+import { 
+  Loader2, Eye, Power, BookOpen, Pencil, Layout, School, 
+  Users, UserPlus, Mail, Hash, Phone, Trophy, FileDown, Clock, CheckCircle2, XCircle
+} from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +36,7 @@ function TeacherContent() {
   const [classrooms, setClassrooms] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [studentLoading, setStudentLoading] = useState(false);
 
@@ -48,16 +53,18 @@ function TeacherContent() {
     if (!profile) return;
     setLoading(true);
     try {
-      const [coursesData, classroomData, studentData, quizzesData] = await Promise.all([
+      const [coursesData, classroomData, studentData, quizzesData, submissionsData] = await Promise.all([
         getCourses(),
         getClassrooms(),
         getStudentsAction(),
-        import('@/app/actions/quizzes').then(m => m.serverGetQuizzes())
+        import('@/app/actions/quizzes').then(m => m.serverGetQuizzes()),
+        getTeacherSubmissions()
       ]);
       setCourses(coursesData);
       setClassrooms(classroomData);
       setStudents(studentData);
       setQuizzes(quizzesData);
+      setSubmissions(submissionsData);
     } catch (err) {
       console.error("Load error:", err);
     } finally {
@@ -99,6 +106,16 @@ function TeacherContent() {
     setStudentLoading(false);
   };
 
+  const handleStatusUpdate = async (submissionId: string, status: 'approved' | 'rejected') => {
+    const result = await updateSubmissionStatusAction(submissionId, status);
+    if (result.success) {
+      toast({ title: "Status Updated", description: `Submission has been ${status}.` });
+      loadData();
+    } else {
+      toast({ title: "Error", description: result.error || "Failed to update status", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-surface">
       <Navbar />
@@ -131,6 +148,9 @@ function TeacherContent() {
             </TabsTrigger>
             <TabsTrigger value="students" className="flex-1 md:flex-none data-[state=active]:bg-success data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
               <Users className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">Students</span>
+            </TabsTrigger>
+            <TabsTrigger value="assignments" className="flex-1 md:flex-none data-[state=active]:bg-success data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
+              <FileDown className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">Assignments</span>
             </TabsTrigger>
           </TabsList>
 
@@ -435,6 +455,135 @@ function TeacherContent() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="assignments" className="space-y-6">
+            <Card className="shadow-sm border-success/10">
+              <CardHeader className="bg-neutral-surface/50 border-b">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileDown className="h-5 w-5 text-success" /> Student Submissions
+                    </CardTitle>
+                    <CardDescription>View and download documents uploaded by your students.</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-widest border-success/20 text-success">
+                    {submissions.length} Total Submissions
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-success" /></div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader className="bg-neutral-surface/30">
+                        <TableRow>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-widest">Student</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-widest">Assignment</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-widest">Submitted On</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-widest">Status</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-widest text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {submissions.map((submission) => (
+                          <TableRow key={submission.id} className="hover:bg-neutral-surface/20 transition-colors">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-success/10 rounded-lg flex items-center justify-center text-success font-bold text-xs">
+                                  {submission.student?.firstName?.[0] || '?'}{submission.student?.lastName?.[0] || '?'}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm">{submission.student?.firstName} {submission.student?.lastName}</p>
+                                  <p className="text-[10px] text-muted-foreground font-mono">{submission.student?.enrollmentNumber || 'No ID'}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <p className="font-medium text-sm text-foreground">{submission.assignment?.title || 'Untitled Assignment'}</p>
+                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                                  <Clock className="h-2.5 w-2.5" /> Due: {submission.assignment?.deadline ? new Date(submission.assignment.deadline).toLocaleDateString() : 'N/A'}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-xs font-mono text-muted-foreground">
+                                {new Date(submission.createdAt).toLocaleDateString()}
+                                <span className="block text-[10px] opacity-60">{new Date(submission.createdAt).toLocaleTimeString()}</span>
+                              </p>
+                            </TableCell>
+                            <TableCell>
+                              {submission.status === 'approved' ? (
+                                <Badge className="bg-success/10 text-success border-success/20 gap-1 text-[9px] uppercase tracking-widest font-bold">
+                                  <CheckCircle2 className="h-2.5 w-2.5" /> Approved
+                                </Badge>
+                              ) : submission.status === 'rejected' ? (
+                                <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 gap-1 text-[9px] uppercase tracking-widest font-bold">
+                                  <XCircle className="h-2.5 w-2.5" /> Rejected
+                                </Badge>
+                              ) : submission.status === 'graded' ? (
+                                <Badge className="bg-primary/10 text-primary border-primary/20 gap-1 text-[9px] uppercase tracking-widest font-bold">
+                                  <Trophy className="h-2.5 w-2.5" /> Graded
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="gap-1 text-[9px] uppercase tracking-widest font-bold">
+                                  <Clock className="h-2.5 w-2.5" /> Pending
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 font-mono text-[10px] uppercase tracking-widest border-success/20 text-success hover:bg-success/5 shadow-sm"
+                                  onClick={() => handleStatusUpdate(submission.id, 'approved')}
+                                  disabled={submission.status === 'approved'}
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 font-mono text-[10px] uppercase tracking-widest border-destructive/20 text-destructive hover:bg-destructive/5 shadow-sm"
+                                  onClick={() => handleStatusUpdate(submission.id, 'rejected')}
+                                  disabled={submission.status === 'rejected'}
+                                >
+                                  <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:bg-neutral-surface/50"
+                                  asChild
+                                >
+                                  <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer" download>
+                                    <FileDown className="h-3.5 w-3.5" />
+                                  </a>
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {submissions.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-mono text-xs">
+                              <div className="flex flex-col items-center gap-3">
+                                <FileDown className="h-10 w-10 opacity-10" />
+                                <p>No assignments have been uploaded by students yet.</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
