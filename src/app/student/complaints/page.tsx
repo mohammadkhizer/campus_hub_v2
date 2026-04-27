@@ -91,20 +91,20 @@ function StudentComplaintsContent() {
   return (
     <div className="min-h-screen bg-neutral-surface">
       <Navbar />
-      <main className="container mx-auto px-6 py-10 max-w-5xl">
+      <main className="container mx-auto px-4 sm:px-6 py-6 md:py-10 max-w-5xl">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-headline font-black text-slate-900 flex items-center gap-3">
-              <Megaphone className="h-8 w-8 text-primary" /> Student Complain Box
+            <h1 className="text-2xl md:text-3xl font-headline font-black text-slate-900 flex items-center gap-2 md:gap-3">
+              <Megaphone className="h-6 w-6 md:h-8 md:w-8 text-primary shrink-0" /> Student Complain Box
             </h1>
-            <p className="text-slate-500 mt-1">Register your concerns, technical issues, or academic grievances.</p>
+            <p className="text-slate-500 text-sm md:text-base mt-1">Register your concerns, technical issues, or academic grievances.</p>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 h-12 px-6">
+              <Button className="w-full md:w-auto bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 h-11 md:h-12 px-6">
                 <Plus className="mr-2 h-5 w-5" /> New Complaint
               </Button>
             </DialogTrigger>
@@ -175,9 +175,9 @@ function StudentComplaintsContent() {
             </div>
           ) : complaints.length > 0 ? (
             complaints.map((complaint) => (
-              <Card key={complaint.id} className="overflow-hidden border-none shadow-premium hover:shadow-xl transition-shadow group">
+              <Card key={complaint.id} className="overflow-hidden border-none shadow-premium hover:shadow-xl transition-shadow group rounded-2xl md:rounded-3xl">
                 <div className="flex flex-col md:flex-row">
-                   <div className={`w-full md:w-2 bg-slate-200 ${
+                   <div className={`w-full md:w-1.5 h-1 md:h-auto ${
                      complaint.status === 'resolved' ? 'bg-green-500' : 
                      complaint.status === 'pending' ? 'bg-amber-400' : 
                      complaint.status === 'in-review' ? 'bg-blue-500' : 'bg-red-500'
@@ -228,7 +228,7 @@ function StudentComplaintsContent() {
               </Card>
             ))
           ) : (
-            <div className="text-center py-24 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
+            <div className="text-center py-16 md:py-24 bg-white rounded-3xl md:rounded-[2.5rem] border border-dashed border-slate-200 px-6">
                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
                   <MessageSquare className="h-10 w-10 text-slate-200" />
                </div>
@@ -240,7 +240,7 @@ function StudentComplaintsContent() {
         </div>
 
         {/* Support Footer */}
-        <div className="mt-16 bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden">
+        <div className="mt-16 bg-slate-900 rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-white relative overflow-hidden">
            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
               <AlertCircle className="h-40 w-40" />
            </div>

@@ -80,36 +80,36 @@ function StudentContent() {
   return (
     <div className="min-h-screen bg-neutral-surface">
       <Navbar />
-      <main className="container mx-auto px-6 py-10 max-w-6xl">
+      <main className="container mx-auto px-4 sm:px-6 py-6 md:py-10 max-w-6xl">
         
         {/* Welcome Header */}
         <div className="rounded-2xl overflow-hidden mb-10 animate-fade-up shadow-premium"
           style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 60%, #1E40AF 100%)' }}>
           <div className="relative p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="absolute inset-0 bg-dot-grid opacity-10" />
-            <div className="relative z-10 flex items-center gap-5">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 border border-white/25 shadow-sm">
-                <span className="font-mono font-black text-xl text-white">{initials}</span>
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 border border-white/25 shadow-sm">
+                <span className="font-mono font-black text-lg md:text-xl text-white">{initials}</span>
               </div>
               <div>
-                <p className="font-mono text-xs text-blue-200/70 uppercase tracking-widest mb-1">Learning Portal</p>
-                <h1 className="font-headline font-black text-3xl md:text-4xl text-white">
+                <p className="font-mono text-[10px] md:text-xs text-blue-200/70 uppercase tracking-widest mb-0.5 md:mb-1">Learning Portal</p>
+                <h1 className="font-headline font-black text-2xl md:text-4xl text-white">
                   {profile?.firstName} <span className="italic">{profile?.lastName}</span>
                 </h1>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 transition-colors uppercase tracking-widest text-[10px]">
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 transition-colors uppercase tracking-widest text-[9px]">
                     ID: {profile?.id.slice(-6)}
                   </Badge>
                   {profile?.enrollmentNumber && (
-                    <Badge className="bg-success/20 text-white border-white/30 hover:bg-white/30 transition-colors uppercase tracking-widest text-[10px]">
+                    <Badge className="bg-success/20 text-white border-white/30 hover:bg-white/30 transition-colors uppercase tracking-widest text-[9px]">
                       ENR: {profile.enrollmentNumber}
                     </Badge>
                   )}
                 </div>
               </div>
             </div>
-            <div className="relative z-10 flex gap-3">
-              <Button className="bg-white text-primary hover:bg-blue-50 font-mono font-bold text-xs uppercase tracking-widest px-6" asChild>
+            <div className="relative z-10 flex gap-3 mt-4 md:mt-0">
+              <Button className="w-full md:w-auto bg-white text-primary hover:bg-blue-50 font-mono font-bold text-xs uppercase tracking-widest px-6" asChild>
                 <Link href="/profile">My Profile</Link>
               </Button>
             </div>

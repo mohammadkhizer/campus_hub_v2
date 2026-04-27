@@ -174,13 +174,13 @@ function AdminContent() {
   return (
     <div className="min-h-screen bg-neutral-surface">
       <Navbar />
-      <main className="container mx-auto px-6 py-10">
+      <main className="container mx-auto px-4 sm:px-6 py-6 md:py-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 animate-fade-up">
           <div className="space-y-1">
             <p className="section-label mb-2">Control Panel</p>
-            <h1 className="font-headline font-black text-3xl text-foreground flex items-center gap-3">
-              <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-blue">
-                <ShieldCheck className="h-5 w-5 text-white" />
+            <h1 className="font-headline font-black text-2xl md:text-3xl text-foreground flex items-center gap-3">
+              <div className="w-8 h-8 md:w-9 md:h-9 bg-primary rounded-xl flex items-center justify-center shadow-blue shrink-0">
+                <ShieldCheck className="h-4 w-4 md:h-5 md:h-5 text-white" />
               </div>
               <span>Administrator <span className="text-primary">Panel</span></span>
             </h1>
@@ -203,18 +203,18 @@ function AdminContent() {
         </div>
 
         <Tabs defaultValue="courses" className="space-y-6">
-          <TabsList className="bg-white border border-border p-1 shadow-sm">
-            <TabsTrigger value="courses" className="data-[state=active]:bg-primary data-[state=active]:text-white font-mono text-xs tracking-wide">
-              <BookOpen className="h-4 w-4 mr-2" /> Courses
+          <TabsList className="bg-white border border-border p-1 shadow-sm w-full md:w-auto flex overflow-x-auto no-scrollbar">
+            <TabsTrigger value="courses" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
+              <BookOpen className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">Courses</span>
             </TabsTrigger>
-            <TabsTrigger value="quizzes" className="data-[state=active]:bg-primary data-[state=active]:text-white font-mono text-xs tracking-wide">
-              <Trophy className="h-4 w-4 mr-2" /> Quizzes
+            <TabsTrigger value="quizzes" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
+              <Trophy className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">Quizzes</span>
             </TabsTrigger>
-            <TabsTrigger value="faculty" className="data-[state=active]:bg-primary data-[state=active]:text-white font-mono text-xs tracking-wide">
-              <Users className="h-4 w-4 mr-2" /> Subject Coordinators
+            <TabsTrigger value="faculty" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
+              <Users className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">Coordinators</span>
             </TabsTrigger>
-            <TabsTrigger value="classrooms" className="data-[state=active]:bg-primary data-[state=active]:text-white font-mono text-xs tracking-wide">
-              <School className="h-4 w-4 mr-2" /> Classrooms
+            <TabsTrigger value="classrooms" className="flex-1 md:flex-none data-[state=active]:bg-primary data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
+              <School className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">Classrooms</span>
             </TabsTrigger>
           </TabsList>
 
@@ -269,7 +269,8 @@ function AdminContent() {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : (
-                  <Table>
+                  <div className="overflow-x-auto">
+                    <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Course Code</TableHead>
@@ -322,6 +323,7 @@ function AdminContent() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -337,7 +339,8 @@ function AdminContent() {
                 {loading ? (
                   <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
                 ) : (
-                  <Table>
+                  <div className="overflow-x-auto">
+                    <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Quiz Title</TableHead>
@@ -372,6 +375,7 @@ function AdminContent() {
                       )}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -411,7 +415,8 @@ function AdminContent() {
                   <CardTitle>Coordinator Registry</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Table>
+                  <div className="overflow-x-auto">
+                    <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
@@ -432,6 +437,7 @@ function AdminContent() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -449,7 +455,8 @@ function AdminContent() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Classroom</TableHead>
@@ -494,6 +501,7 @@ function AdminContent() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

@@ -102,13 +102,13 @@ function TeacherContent() {
   return (
     <div className="min-h-screen bg-neutral-surface">
       <Navbar />
-      <main className="container mx-auto px-6 py-10">
+      <main className="container mx-auto px-4 sm:px-6 py-6 md:py-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 animate-fade-up">
           <div className="space-y-1">
             <p className="section-label mb-2">Academic Portal</p>
-            <h1 className="font-headline font-black text-3xl text-foreground flex items-center gap-3">
-              <div className="w-9 h-9 bg-success rounded-xl flex items-center justify-center shadow-green">
-                <Layout className="h-5 w-5 text-white" />
+            <h1 className="font-headline font-black text-2xl md:text-3xl text-foreground flex items-center gap-3">
+              <div className="w-8 h-8 md:w-9 md:h-9 bg-success rounded-xl flex items-center justify-center shadow-green shrink-0">
+                <Layout className="h-4 w-4 md:h-5 md:h-5 text-white" />
               </div>
               <span>Subject Coordinator <span className="text-success">Dashboard</span></span>
             </h1>
@@ -119,18 +119,18 @@ function TeacherContent() {
         </div>
 
         <Tabs defaultValue="courses" className="space-y-6">
-          <TabsList className="bg-white border border-border p-1 shadow-sm">
-            <TabsTrigger value="courses" className="data-[state=active]:bg-success data-[state=active]:text-white font-mono text-xs tracking-wide">
-              <BookOpen className="h-4 w-4 mr-2" /> My Courses
+          <TabsList className="bg-white border border-border p-1 shadow-sm w-full md:w-auto flex overflow-x-auto no-scrollbar">
+            <TabsTrigger value="courses" className="flex-1 md:flex-none data-[state=active]:bg-success data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
+              <BookOpen className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">My Courses</span>
             </TabsTrigger>
-            <TabsTrigger value="quizzes" className="data-[state=active]:bg-success data-[state=active]:text-white font-mono text-xs tracking-wide">
-              <Trophy className="h-4 w-4 mr-2" /> Quizzes
+            <TabsTrigger value="quizzes" className="flex-1 md:flex-none data-[state=active]:bg-success data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
+              <Trophy className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">Quizzes</span>
             </TabsTrigger>
-            <TabsTrigger value="classrooms" className="data-[state=active]:bg-success data-[state=active]:text-white font-mono text-xs tracking-wide">
-              <School className="h-4 w-4 mr-2" /> Classrooms
+            <TabsTrigger value="classrooms" className="flex-1 md:flex-none data-[state=active]:bg-success data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
+              <School className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">Classrooms</span>
             </TabsTrigger>
-            <TabsTrigger value="students" className="data-[state=active]:bg-success data-[state=active]:text-white font-mono text-xs tracking-wide">
-              <Users className="h-4 w-4 mr-2" /> Students
+            <TabsTrigger value="students" className="flex-1 md:flex-none data-[state=active]:bg-success data-[state=active]:text-white font-mono text-[10px] md:text-xs tracking-wide">
+              <Users className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> <span className="whitespace-nowrap">Students</span>
             </TabsTrigger>
           </TabsList>
 
@@ -159,43 +159,45 @@ function TeacherContent() {
                 {loading ? (
                   <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-success" /></div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {courses.map((course) => (
-                        <TableRow key={course.id}>
-                          <TableCell className="font-mono text-xs font-bold text-accent">{course.code || '---'}</TableCell>
-                          <TableCell className="font-medium">{course.title}</TableCell>
-                          <TableCell>
-                            <Badge variant={course.isPublished ? 'default' : 'secondary'}>{course.isPublished ? 'Published' : 'Draft'}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => toggleStatus(course)}>
-                                <Power className={`h-4 w-4 ${course.isPublished ? 'text-green-600' : 'text-muted-foreground'}`} />
-                              </Button>
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={`/courses/edit/${course.id}`}><Pencil className="h-4 w-4" /></Link>
-                              </Button>
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={`/courses/${course.id}/manage`}><Layout className="h-4 w-4" /></Link>
-                              </Button>
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={`/courses/${course.id}`}><Eye className="h-4 w-4" /></Link>
-                              </Button>
-                            </div>
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {courses.map((course) => (
+                          <TableRow key={course.id}>
+                            <TableCell className="font-mono text-xs font-bold text-accent">{course.code || '---'}</TableCell>
+                            <TableCell className="font-medium">{course.title}</TableCell>
+                            <TableCell>
+                              <Badge variant={course.isPublished ? 'default' : 'secondary'}>{course.isPublished ? 'Published' : 'Draft'}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => toggleStatus(course)}>
+                                  <Power className={`h-4 w-4 ${course.isPublished ? 'text-green-600' : 'text-muted-foreground'}`} />
+                                </Button>
+                                <Button variant="ghost" size="icon" asChild>
+                                  <Link href={`/courses/edit/${course.id}`}><Pencil className="h-4 w-4" /></Link>
+                                </Button>
+                                <Button variant="ghost" size="icon" asChild>
+                                  <Link href={`/courses/${course.id}/manage`}><Layout className="h-4 w-4" /></Link>
+                                </Button>
+                                <Button variant="ghost" size="icon" asChild>
+                                  <Link href={`/courses/${course.id}`}><Eye className="h-4 w-4" /></Link>
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -211,41 +213,43 @@ function TeacherContent() {
                 {loading ? (
                   <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-success" /></div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Quiz Title</TableHead>
-                        <TableHead>Course</TableHead>
-                        <TableHead>Questions</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {quizzes.filter(q => courses.some(c => c.id === q.course)).map((quiz) => (
-                        <TableRow key={quiz.id}>
-                          <TableCell className="font-medium">{quiz.title}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{courses.find(c => c.id === quiz.course)?.title || 'Course'}</Badge>
-                          </TableCell>
-                          <TableCell>{quiz.questions?.length || 0} items</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="outline" size="sm" asChild className="border-accent text-accent hover:bg-accent/5">
-                              <Link href={`/quizzes/${quiz.id}/leaderboard`}>
-                                <Trophy className="h-4 w-4 mr-2" /> Leaderboard
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {quizzes.filter(q => courses.some(c => c.id === q.course)).length === 0 && (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
-                            No quizzes found for your courses.
-                          </TableCell>
+                          <TableHead>Quiz Title</TableHead>
+                          <TableHead>Course</TableHead>
+                          <TableHead>Questions</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {quizzes.filter(q => courses.some(c => c.id === q.course)).map((quiz) => (
+                          <TableRow key={quiz.id}>
+                            <TableCell className="font-medium">{quiz.title}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{courses.find(c => c.id === quiz.course)?.title || 'Course'}</Badge>
+                            </TableCell>
+                            <TableCell>{quiz.questions?.length || 0} items</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="outline" size="sm" asChild className="border-accent text-accent hover:bg-accent/5">
+                                <Link href={`/quizzes/${quiz.id}/leaderboard`}>
+                                  <Trophy className="h-4 w-4 mr-2" /> Leaderboard
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {quizzes.filter(q => courses.some(c => c.id === q.course)).length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                              No quizzes found for your courses.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -258,24 +262,26 @@ function TeacherContent() {
                 <CardDescription>View students and courses in your assigned classrooms.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Classroom</TableHead>
-                      <TableHead>Students</TableHead>
-                      <TableHead>Courses</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {classrooms.map((cls) => (
-                      <TableRow key={cls.id}>
-                        <TableCell className="font-bold">{cls.name}</TableCell>
-                        <TableCell>{cls.studentIds?.length || 0} enrolled</TableCell>
-                        <TableCell>{cls.courseIds?.length || 0} mapped</TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Classroom</TableHead>
+                        <TableHead>Students</TableHead>
+                        <TableHead>Courses</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {classrooms.map((cls) => (
+                        <TableRow key={cls.id}>
+                          <TableCell className="font-bold">{cls.name}</TableCell>
+                          <TableCell>{cls.studentIds?.length || 0} enrolled</TableCell>
+                          <TableCell>{cls.courseIds?.length || 0} mapped</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -374,7 +380,8 @@ function TeacherContent() {
                   {loading ? (
                     <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
                   ) : (
-                    <Table>
+                    <div className="overflow-x-auto">
+                      <Table>
                       <TableHeader className="bg-neutral-surface/30">
                         <TableRow>
                           <TableHead className="font-mono text-[10px] uppercase tracking-widest">Student</TableHead>
@@ -422,7 +429,8 @@ function TeacherContent() {
                           </TableRow>
                         )}
                       </TableBody>
-                    </Table>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>

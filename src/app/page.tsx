@@ -30,7 +30,7 @@ export default function LandingPage() {
       <main className="flex-1">
 
         {/* ── HERO ─────────────────────────────────────────────────────── */}
-        <section className="relative pt-24 pb-20 md:pt-36 md:pb-28 overflow-hidden">
+        <section className="relative pt-20 pb-16 md:pt-36 md:pb-28 overflow-hidden">
           {/* Dot grid background */}
           <div className="absolute inset-0 bg-dot-grid opacity-100 -z-10" />
           {/* Blue radial glow */}
@@ -49,7 +49,7 @@ export default function LandingPage() {
               </div>
 
               {/* Headline */}
-              <h1 className="animate-fade-up delay-150 font-headline font-black text-5xl md:text-7xl leading-[1.05] tracking-tight text-foreground mb-6">
+              <h1 className="animate-fade-up delay-150 font-headline font-black text-4xl md:text-7xl leading-[1.1] tracking-tight text-foreground mb-6">
                 Empower Your{' '}
                 <span className="text-shimmer">Educational</span>{' '}
                 Journey
@@ -86,7 +86,7 @@ export default function LandingPage() {
               <div className="animate-fade-up delay-600 pt-8 border-t border-border">
                 <p className="section-label justify-center mb-5">Trusted by academic leaders worldwide</p>
                 <div className="flex flex-wrap justify-center items-center gap-8 md:gap-14">
-                  {['SVGU University', 'Tech Institute', 'Global Academy', 'Edu-Systems'].map((name) => (
+                  {['ABC University', 'Tech Institute', 'Global Academy', 'Edu-Systems'].map((name) => (
                     <span key={name} className="font-headline font-black text-sm text-foreground/20 hover:text-foreground/50 transition-colors uppercase tracking-widest cursor-default">
                       {name}
                     </span>
@@ -166,7 +166,7 @@ export default function LandingPage() {
               <div className="animate-slide-right delay-150 text-white space-y-8">
                 <div>
                   <p className="section-label text-blue-200/70 mb-4">Architecture</p>
-                  <h2 className="font-headline font-black text-5xl md:text-6xl leading-tight">
+                  <h2 className="font-headline font-black text-3xl md:text-6xl leading-tight">
                     Secure.<br />Scalable.<br />
                     <span className="italic text-blue-200">Scientific.</span>
                   </h2>
@@ -231,7 +231,7 @@ export default function LandingPage() {
               <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
                 <div className="max-w-2xl">
                   <p className="section-label mb-3">Student Voice</p>
-                  <h2 className="font-headline font-black text-4xl md:text-5xl text-foreground">
+                  <h2 className="font-headline font-black text-3xl md:text-5xl text-foreground">
                     Real Stories from <span className="text-accent">Our Community</span>
                   </h2>
                 </div>
@@ -295,7 +295,7 @@ export default function LandingPage() {
                 <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-blue-400 font-bold">Protocol v2.4 </span>
               </div>
 
-              <h2 className="font-headline font-black text-5xl md:text-8xl text-white leading-none tracking-tighter animate-fade-up">
+              <h2 className="font-headline font-black text-4xl md:text-8xl text-white leading-none tracking-tighter animate-fade-up">
                 ENGINEER <br />
                 <span className="text-blue-500">YOUR FUTURE</span>
               </h2>
@@ -314,7 +314,7 @@ export default function LandingPage() {
                   <div className="absolute -left-12 top-1/2 -translate-y-1/2 h-16 w-px bg-blue-500/30 group-hover:h-24 group-hover:bg-blue-500 transition-all duration-700" />
                   <div className="absolute -right-12 top-1/2 -translate-y-1/2 h-16 w-px bg-blue-500/30 group-hover:h-24 group-hover:bg-blue-500 transition-all duration-700" />
 
-                  <span className="font-headline font-black text-3xl md:text-6xl tracking-tight uppercase group-hover:scale-105 transition-transform duration-700">
+                  <span className="font-headline font-black text-2xl md:text-6xl tracking-tight uppercase group-hover:scale-105 transition-transform duration-700">
                     {isAuthenticated ? "Launch Dashboard" : "Initialize Account"}
                   </span>
 
@@ -342,59 +342,6 @@ export default function LandingPage() {
         </section>
       </main>
 
-      {/* ── FOOTER ────────────────────────────────────────────────────── */}
-      <footer className="border-t border-border bg-white py-14">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-10">
-            <div className="md:col-span-2 space-y-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <GraduationCap className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-headline font-black text-xl text-foreground">
-                  Campus<span className="text-primary">Hub</span>
-                </span>
-              </div>
-              <p className="font-mono text-sm text-muted-foreground max-w-xs leading-relaxed">
-                The ultimate learning management and assessment architecture. Built for reliability, designed for excellence.
-              </p>
-            </div>
-            <div className="space-y-4">
-              <h4 className="font-mono font-bold text-[10px] uppercase tracking-[0.2em] text-foreground">Navigation</h4>
-              <div className="flex flex-col space-y-3">
-                {['Platform Features', 'Success Stories', 'Pricing Plans', 'Our Vision'].map((item) => (
-                  <Link key={item} href="#" className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors">
-                    {item}
-                  </Link>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-4">
-              <h4 className="font-mono font-bold text-[10px] uppercase tracking-[0.2em] text-foreground">Legal & Support</h4>
-              <div className="flex flex-col space-y-3">
-                {['Security Overview', 'Terms of Service', 'Privacy Policy', 'API Reference'].map((item) => (
-                  <Link key={item} href="#" className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors">
-                    {item}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-border pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="font-mono text-[11px] text-muted-foreground">
-              © {new Date().getFullYear()} Campus Hub Cloud Services. All rights reserved.
-            </p>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-all cursor-pointer">
-                <div className="w-3 h-3 bg-current rounded-sm" />
-              </div>
-              <div className="w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-all cursor-pointer">
-                <div className="w-3 h-3 bg-current rounded-full" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

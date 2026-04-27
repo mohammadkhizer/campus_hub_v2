@@ -10,6 +10,8 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
 import { env } from '@/lib/env';
 import { toDTO } from '@/lib/dto';
+import { createAction, ActionResponse } from '@/lib/action-factory';
+import { USER_ROLES } from '@/lib/constants';
 
 const JWT_SECRET = env.JWT_SECRET;
 
@@ -23,7 +25,7 @@ const signupSchema = z.object({
   password: z.string().min(6),
   firstName: z.string().min(2),
   lastName: z.string().min(2),
-  role: z.enum(['student', 'teacher', 'administrator', 'superadmin']).default('student'),
+  role: z.nativeEnum(USER_ROLES).default(USER_ROLES.STUDENT),
   enrollmentNumber: z.string().optional(),
   contactNumber: z.string().optional(),
 });
@@ -211,67 +213,68 @@ export async function updateProfileAction(data: {
   enrollmentNumber?: string, 
   contactNumber?: string,
   password?: string 
-}) {
-  try {
-    const session = await getSessionAction();
-    if (!session) return { success: false, error: 'Unauthorized' };
+}): Promise<ActionResponse<{ success: boolean }>> {
+  return createAction({
+    name: 'updateProfileAction',
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    inputSchema: z.object({
+      firstName: z.string().min(2),
+      lastName: z.string().min(2),
+      email: z.string().email(),
+      enrollmentNumber: z.string().optional(),
+      contactNumber: z.string().optional(),
+      password: z.string().min(6).optional().or(z.literal('')),
+    }),
+    handler: async (validatedData, { user: session }) => {
+      // Check for email collision
+      if (validatedData.email !== session!.email) {
+        const existing = await User.findOne({ email: validatedData.email });
+        if (existing) throw new Error('Email already in use');
+      }
 
-    await dbConnect();
-    
-    // Check for email collision
-    if (data.email !== session.email) {
-      const existing = await User.findOne({ email: data.email });
-      if (existing) return { success: false, error: 'Email already in use' };
+      // Check for enrollment collision
+      if (validatedData.enrollmentNumber && validatedData.enrollmentNumber !== (session as any).enrollmentNumber) {
+        const existing = await User.findOne({ enrollmentNumber: validatedData.enrollmentNumber });
+        if (existing) throw new Error('Enrollment Number already in use');
+      }
+
+      const updateData: any = {
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        email: validatedData.email,
+        enrollmentNumber: validatedData.enrollmentNumber,
+        contactNumber: validatedData.contactNumber,
+      };
+
+      if (validatedData.password && validatedData.password.trim().length > 0) {
+        updateData.password = await bcrypt.hash(validatedData.password, 12);
+        updateData.$inc = { passwordVersion: 1 };
+      }
+
+      await User.findByIdAndUpdate(session!.id, updateData);
+      logger.info('Profile updated', { userId: session!.id, email: validatedData.email });
+      
+      return { success: true };
     }
-
-    // Check for enrollment collision
-    if (data.enrollmentNumber && data.enrollmentNumber !== (session as any).enrollmentNumber) {
-      const existing = await User.findOne({ enrollmentNumber: data.enrollmentNumber });
-      if (existing) return { success: false, error: 'Enrollment Number already in use' };
-    }
-
-    const updateData: any = {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      enrollmentNumber: data.enrollmentNumber,
-      contactNumber: data.contactNumber,
-    };
-
-    if (data.password && data.password.trim().length > 0) {
-      if (data.password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
-      updateData.password = await bcrypt.hash(data.password, 12);
-      updateData.$inc = { passwordVersion: 1 };
-    }
-
-    await User.findByIdAndUpdate(session.id, updateData);
-    logger.info('Profile updated', { userId: session.id, email: data.email });
-    
-    return { success: true };
-  } catch (error: any) {
-    logger.error('updateProfileAction error', { error: error.message });
-    return { success: false, error: 'Profile update failed' };
-  }
+  }, data);
 }
 
 
-export async function getStudentsAction() {
-  try {
-    const session = await getSessionAction();
-    if (!session || !['administrator', 'teacher', 'superadmin'].includes(session.role)) {
-      return [];
+export async function getStudentsAction(): Promise<any[]> {
+  const result = await createAction({
+    name: 'getStudentsAction',
+    allowedRoles: [USER_ROLES.ADMINISTRATOR, USER_ROLES.TEACHER, USER_ROLES.SUPERADMIN],
+    handler: async () => {
+      const students = await User.find({ role: USER_ROLES.STUDENT }).select('-password').lean();
+      return JSON.parse(JSON.stringify(students)).map((s: any) => ({
+        ...s,
+        id: s._id.toString()
+      }));
     }
-
-    await dbConnect();
-    const students = await User.find({ role: 'student' }).select('-password').lean();
-    return JSON.parse(JSON.stringify(students)).map((s: any) => ({
-      ...s,
-      id: s._id.toString()
-    }));
-  } catch (error: any) {
-    logger.error('getStudentsAction error', { error: error.message });
-    return [];
-  }
+  }, {});
+  
+  if (!result.success) return [];
+  return result.data;
 }
 
 export async function getUsersByRoleAction(roles: string[]) {

@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
-import { LogOut, GraduationCap, Loader2 } from 'lucide-react';
+import { LogOut, GraduationCap, Loader2, Menu, X } from 'lucide-react';
 import { NAVIGATION_CONFIG, getDashboardHref, Role } from '@/config/navigation';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export function Navbar() {
   const { profile, isAuthenticated, isLoading, signOut } = useAuth();
   const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const userRole = profile?.role as Role;
 
@@ -16,6 +18,21 @@ export function Navbar() {
   const allowedItems = NAVIGATION_CONFIG.filter(item => 
     item.roles.includes(userRole)
   );
+
+  // Close menu on navigation
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
+  // Prevent scroll when menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isMenuOpen]);
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-border shadow-sm">
@@ -76,12 +93,13 @@ export function Navbar() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="font-mono text-xs font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+                className="hidden sm:block font-mono text-xs font-bold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
               >
                 Login
               </Link>
               <Link href="/signup" className="btn-primary text-xs px-4 py-2">
-                Get Access
+                <span className="hidden xs:inline">Get Access</span>
+                <span className="xs:hidden">Join</span>
               </Link>
             </div>
           ) : (
@@ -96,7 +114,7 @@ export function Navbar() {
                     {profile?.firstName?.[0]}{profile?.lastName?.[0]}
                   </span>
                 </div>
-                <div className="text-left hidden sm:block">
+                <div className="text-left hidden lg:block">
                   <p className="font-mono text-[11px] font-bold leading-none text-foreground">
                     {profile?.firstName} {profile?.lastName}
                   </p>
@@ -115,8 +133,72 @@ export function Navbar() {
               </button>
             </div>
           )}
+
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex md:hidden p-2 rounded-lg hover:bg-primary/5 text-foreground transition-colors"
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
+
+      {/* ── Mobile Navigation Overlay ── */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 top-[59px] z-40 bg-white md:hidden animate-fade-in">
+          <div className="flex flex-col p-6 gap-2">
+            {isAuthenticated && allowedItems.map((item) => {
+              let href = item.href;
+              if (href === '/dashboard-redirect') href = getDashboardHref(userRole);
+              if (href === '/classrooms') href = getDashboardHref(userRole);
+
+              const Icon = item.icon;
+              const isActive = pathname === href;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={href}
+                  className={`flex items-center gap-3 px-4 py-4 rounded-xl transition-all ${
+                    isActive 
+                      ? 'bg-primary/10 text-primary' 
+                      : 'hover:bg-primary/5 text-muted-foreground'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="font-mono text-sm font-bold uppercase tracking-wider">{item.title}</span>
+                </Link>
+              );
+            })}
+            
+            {!isAuthenticated && (
+              <>
+                <Link href="/login" className="flex items-center gap-3 px-4 py-4 rounded-xl text-muted-foreground">
+                  <span className="font-mono text-sm font-bold uppercase tracking-wider">Login</span>
+                </Link>
+                <Link href="/signup" className="flex items-center gap-3 px-4 py-4 rounded-xl bg-primary text-white mt-4">
+                  <span className="font-mono text-sm font-bold uppercase tracking-wider">Get Access</span>
+                </Link>
+              </>
+            )}
+            
+            {isAuthenticated && (
+              <button
+                onClick={() => {
+                  signOut();
+                  setIsMenuOpen(false);
+                }}
+                className="flex items-center gap-3 px-4 py-4 rounded-xl text-destructive hover:bg-destructive/5 mt-auto"
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="font-mono text-sm font-bold uppercase tracking-wider">Sign Out</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

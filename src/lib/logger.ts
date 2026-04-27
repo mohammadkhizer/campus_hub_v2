@@ -21,7 +21,7 @@ class Logger {
     };
   }
 
-  private log(entry: LogEntry) {
+  private async log(entry: LogEntry) {
     const output = JSON.stringify(entry);
     if (entry.level === 'error' || entry.level === 'security') {
       console.error(output);
@@ -31,23 +31,41 @@ class Logger {
       console.log(output);
     }
 
-    // In production, you would send this to a service like Axiom, Datadog, or a simple file.
+    // Persist to Database for important logs
+    if (['error', 'security', 'warn'].includes(entry.level) || entry.context?.persist) {
+      try {
+        // Dynamic import to avoid circular dependencies and ensure it only runs on server
+        const dbConnect = (await import('./mongoose')).default;
+        const SystemLog = (await import('@/models/SystemLog')).default;
+        
+        await dbConnect();
+        await SystemLog.create({
+          level: entry.level,
+          message: entry.message,
+          context: entry.context,
+          timestamp: new Date(entry.timestamp)
+        });
+      } catch (dbErr) {
+        // Fallback if DB logging fails - don't throw to avoid crashing the main process
+        console.error('CRITICAL: Log persistence failed', dbErr);
+      }
+    }
   }
 
-  info(message: string, context?: Record<string, any>) {
-    this.log(this.format('info', message, context));
+  async info(message: string, context?: Record<string, any>) {
+    await this.log(this.format('info', message, context));
   }
 
-  warn(message: string, context?: Record<string, any>) {
-    this.log(this.format('warn', message, context));
+  async warn(message: string, context?: Record<string, any>) {
+    await this.log(this.format('warn', message, context));
   }
 
-  error(message: string, context?: Record<string, any>) {
-    this.log(this.format('error', message, context));
+  async error(message: string, context?: Record<string, any>) {
+    await this.log(this.format('error', message, context));
   }
 
-  security(message: string, context?: Record<string, any>) {
-    this.log(this.format('security', `[SECURITY] ${message}`, context));
+  async security(message: string, context?: Record<string, any>) {
+    await this.log(this.format('security', `[SECURITY] ${message}`, context));
   }
 }
 

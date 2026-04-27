@@ -127,7 +127,7 @@ export default function CourseDetailPage() {
                 <Badge className="bg-accent text-white">Advanced</Badge>
               </div>
               <div className="flex items-center gap-3">
-                <h1 className="text-4xl md:text-5xl font-headline font-bold text-primary">{course.title}</h1>
+                <h1 className="text-3xl md:text-5xl font-headline font-bold text-primary">{course.title}</h1>
                 {course.code && (
                   <Badge variant="outline" className="border-accent text-accent font-bold">
                     {course.code}
@@ -252,10 +252,10 @@ export default function CourseDetailPage() {
                 )}
 
                 <Tabs defaultValue="notes" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-muted/50">
-                  <TabsTrigger value="notes" className="text-base">Study Materials</TabsTrigger>
-                  <TabsTrigger value="quizzes" className="text-base">Quizzes</TabsTrigger>
-                  <TabsTrigger value="assignments" className="text-base">Assignments</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 mb-8 h-10 md:h-12 bg-muted/50 p-1">
+                  <TabsTrigger value="notes" className="text-xs md:text-base">Materials</TabsTrigger>
+                  <TabsTrigger value="quizzes" className="text-xs md:text-base">Quizzes</TabsTrigger>
+                  <TabsTrigger value="assignments" className="text-xs md:text-base">Tasks</TabsTrigger>
                 </TabsList>
 
                 {/* Notes Tab */}

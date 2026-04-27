@@ -44,10 +44,10 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <header className="mb-10 text-center max-w-2xl mx-auto">
-          <h1 className="text-4xl font-headline font-bold text-primary mb-3">Academic Courses</h1>
-          <p className="text-muted-foreground text-lg">
+      <main className="container mx-auto px-4 py-6 md:py-8">
+        <header className="mb-8 text-center max-w-2xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-headline font-bold text-primary mb-2 md:mb-3">Academic Courses</h1>
+          <p className="text-muted-foreground text-base md:text-lg">
             Explore structured learning paths designed to help you master your subjects.
           </p>
         </header>

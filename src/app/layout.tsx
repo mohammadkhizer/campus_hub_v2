@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: 'The next-generation LMS for institutional excellence — AI-driven assessments, role-based governance, and scholarly progress tracking.',
 };
 
+import { Footer } from "@/components/footer";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -33,7 +35,12 @@ export default async function RootLayout({
       </head>
       <body className="font-body antialiased bg-background min-h-screen">
         <AuthProvider initialProfile={session}>
-          {children}
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Footer />
+          </div>
           <Toaster />
         </AuthProvider>
       </body>

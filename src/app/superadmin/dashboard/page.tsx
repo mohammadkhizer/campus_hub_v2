@@ -1,12 +1,23 @@
 "use client";
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { RouteGuard } from '@/components/route-guard';
 import { useAuth } from '@/context/auth-context';
-import { getSystemStats, manageUserRoleAction } from '@/app/actions/superadmin';
+import { getSystemStats, manageUserRoleAction, generateSystemAnalysisAction } from '@/app/actions/superadmin';
+import { UserRole } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import ReactMarkdown from 'react-markdown';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import {
   Loader2,
@@ -59,22 +70,43 @@ function SuperAdminContent() {
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
+  const [report, setReport] = useState<string | null>(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const loadStats = async () => {
     setLoading(true);
     const result = await getSystemStats();
     if (result.success) {
-      setStats(result.stats);
-      setRecentUsers(result.recentUsers);
+      setStats(result.data.stats);
+      setRecentUsers(result.data.recentUsers);
     } else {
       toast({ title: "Error", description: result.error, variant: "destructive" });
     }
     setLoading(false);
   };
 
+  const handleGenerateReport = async () => {
+    setGeneratingReport(true);
+    try {
+      const result = await generateSystemAnalysisAction();
+      if (result.success) {
+        setReport(result.data.reportMarkdown);
+        setIsReportOpen(true);
+        toast({ title: "Intelligence Report Generated", description: "The AI has finished analyzing the system." });
+      } else {
+        toast({ title: "Generation Failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
   useEffect(() => { loadStats(); }, []);
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  const handleRoleChange = async (userId: string, newRole: UserRole) => {
     if (userId === profile?.id && newRole !== 'superadmin') {
       toast({ title: "Warning", description: "Changes to your own superadmin role require re-login.", variant: "destructive" });
       return;
@@ -85,7 +117,7 @@ function SuperAdminContent() {
     );
     const result = await manageUserRoleAction(userId, newRole);
     if (result.success) {
-      toast({ title: "Role Updated ✓", description: result.message });
+      toast({ title: "Role Updated ✓", description: result.data.message });
     } else {
       toast({ title: "Failed", description: result.error, variant: "destructive" });
       loadStats();
@@ -110,7 +142,7 @@ function SuperAdminContent() {
     <div className="min-h-screen bg-neutral-surface">
       <Navbar />
 
-      <main className="container mx-auto px-6 py-10 max-w-7xl">
+      <main className="container mx-auto px-4 sm:px-6 py-6 md:py-10 max-w-7xl">
 
         {/* ── Header ─────────────────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-5 animate-fade-up">
@@ -121,10 +153,10 @@ function SuperAdminContent() {
                 <UserCog className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="font-headline font-black text-3xl text-foreground">
+                <h1 className="font-headline font-black text-2xl md:text-3xl text-foreground">
                   Super Admin <span className="text-primary">Governance</span>
                 </h1>
-                <p className="font-mono text-sm text-muted-foreground">
+                <p className="font-mono text-xs md:text-sm text-muted-foreground">
                   Enterprise oversight for the Campus Hub ecosystem.
                 </p>
               </div>
@@ -163,12 +195,12 @@ function SuperAdminContent() {
           ].map((item, i) => (
             <div key={i} className={`stat-card border ${item.bg} animate-fade-up delay-150`}>
               <div className="flex items-center justify-between mb-3">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{item.label}</p>
-                <div className="p-2 bg-white rounded-lg shadow-sm border border-border/50">{item.icon}</div>
+                <p className="font-mono text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{item.label}</p>
+                <div className="p-1.5 md:p-2 bg-white rounded-lg shadow-sm border border-border/50">{item.icon}</div>
               </div>
-              <p className="font-headline font-black text-4xl text-foreground">{item.value}</p>
-              <p className="font-mono text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3 text-success" /> +12.4% vs last month
+              <p className="font-headline font-black text-2xl md:text-4xl text-foreground">{item.value}</p>
+              <p className="font-mono text-[9px] md:text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3 text-success" /> +12%
               </p>
             </div>
           ))}
@@ -237,7 +269,7 @@ function SuperAdminContent() {
                             <Select
                               key={`${user._id}-${user.role}`}
                               value={user.role}
-                              onValueChange={(val) => handleRoleChange(user._id, val)}
+                              onValueChange={(val) => handleRoleChange(user._id, val as UserRole)}
                             >
                               <SelectTrigger className="w-[140px] h-8 font-mono text-xs border-border">
                                 <SelectValue />
@@ -338,26 +370,71 @@ function SuperAdminContent() {
                 <h3 className="font-headline font-bold text-lg text-white">Executive Controls</h3>
               </div>
               <div className="p-5 space-y-3">
-                {[
-                  { label: 'Platform-wide Config', icon: <ChevronRight className="h-4 w-4" /> },
-                  { label: 'Audit Logs Download', icon: <ChevronRight className="h-4 w-4" /> },
-                ].map((btn) => (
-                  <button
-                    key={btn.label}
+                  <Link
+                    href="/superadmin/logs"
                     className="w-full flex items-center justify-between px-4 py-3 bg-white/10 border border-white/15 text-white rounded-xl hover:bg-white/20 transition-colors font-mono text-sm font-medium"
                   >
-                    <span>{btn.label}</span>
-                    {btn.icon}
-                  </button>
-                ))}
-                <button className="w-full flex items-center justify-between px-4 py-3 bg-white text-primary rounded-xl hover:bg-blue-50 transition-colors font-mono text-sm font-bold shadow-sm">
-                  <span>Initialize DB Sync</span>
-                  <Activity className="h-4 w-4 animate-pulse" />
+                    <span>System Audit Logs</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                <button 
+                  onClick={handleGenerateReport}
+                  disabled={generatingReport}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white text-primary rounded-xl hover:bg-blue-50 transition-colors font-mono text-sm font-bold shadow-sm disabled:opacity-50"
+                >
+                  <span>{generatingReport ? 'Analyzing System...' : 'Generate Intelligence Report'}</span>
+                  {generatingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4 animate-pulse" />}
                 </button>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Intelligence Report Modal */}
+        <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col p-0 bg-white rounded-2xl border-none shadow-2xl">
+            <DialogHeader className="px-8 py-6 bg-gradient-to-r from-blue-700 to-primary text-white">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <Activity className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="font-headline font-black text-2xl">System Intelligence Report</DialogTitle>
+                  <DialogDescription className="text-blue-100 font-mono text-xs uppercase tracking-widest mt-1">
+                    AI-Powered Executive Analysis
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-y-auto px-8 py-8 prose prose-slate max-w-none">
+              <div className="font-mono text-xs text-muted-foreground mb-6 pb-2 border-b border-border flex justify-between">
+                <span>REPORT_ID: {Math.random().toString(36).substring(7).toUpperCase()}</span>
+                <span>GENERATED: {new Date().toLocaleString()}</span>
+              </div>
+              <div className="markdown-content">
+                <ReactMarkdown>{report || ''}</ReactMarkdown>
+              </div>
+            </div>
+
+            <DialogFooter className="px-8 py-4 bg-neutral-surface border-t border-border">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsReportOpen(false)}
+                className="font-mono text-xs uppercase tracking-widest font-bold"
+              >
+                Close Report
+              </Button>
+              <Button 
+                onClick={() => window.print()}
+                className="bg-primary text-white font-mono text-xs uppercase tracking-widest font-bold px-6"
+              >
+                Export as PDF
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </main>
     </div>
   );
