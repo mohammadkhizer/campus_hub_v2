@@ -150,7 +150,7 @@ export function Footer() {
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
               <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
-              v2.5.0 Stable
+              v1.2 Stable
             </span>
           </div>
         </div>
