@@ -86,7 +86,7 @@ export default async function AIHubPage() {
                 ].map((cap, i) => (
                   <li key={i} className="space-y-1">
                     <p className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                      <div className="h-1 w-1 rounded-full bg-cyan-500" />
+                      <span className="h-1 w-1 rounded-full bg-cyan-500" />
                       {cap.label}
                     </p>
                     <p className="text-[10px] text-slate-600 font-medium ml-3">{cap.desc}</p>

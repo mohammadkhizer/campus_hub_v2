@@ -6,9 +6,19 @@ const ComplaintSchema = new mongoose.Schema({
   subject: { type: String, required: true },
   category: { 
     type: String, 
-    enum: ['academic', 'technical', 'facility', 'administrative', 'other'],
+    enum: ['academic', 'technical', 'facility', 'administrative', 'grievance', 'anti-ragging', 'other'],
     default: 'other' 
   },
+  severity: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'critical'],
+    default: 'low'
+  },
+  evidence: [{
+    url: { type: String },
+    type: { type: String },
+    name: { type: String }
+  }],
   description: { type: String, required: true },
   status: { 
     type: String, 
@@ -17,6 +27,8 @@ const ComplaintSchema = new mongoose.Schema({
   },
   response: { type: String },
   resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  resolvedAt: { type: Date },
+  isAnonymous: { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Force clear model from cache to prevent stale issues

@@ -37,7 +37,11 @@ import {
   Filter,
   Search,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  FileText,
+  AlertTriangle,
+  Paperclip,
+  ShieldAlert
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -93,6 +97,16 @@ function AdminComplaintsContent() {
       case 'resolved': return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 uppercase text-[10px]">Resolved</Badge>;
       case 'rejected': return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 uppercase text-[10px]">Closed</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getSeverityBadge = (severity: string) => {
+    switch (severity) {
+      case 'low': return <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 uppercase text-[10px]">Low</Badge>;
+      case 'medium': return <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100 uppercase text-[10px]">Medium</Badge>;
+      case 'high': return <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200 uppercase text-[10px]">High</Badge>;
+      case 'critical': return <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200 animate-pulse uppercase text-[10px] font-bold">Critical</Badge>;
+      default: return null;
     }
   };
 
@@ -172,6 +186,7 @@ function AdminComplaintsContent() {
                      <div className="flex-grow min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                            {getStatusBadge(c.status)}
+                           {getSeverityBadge(c.severity)}
                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{c.category}</span>
                         </div>
                         <h4 className="font-bold text-slate-900 truncate group-hover:text-primary transition-colors">{c.subject}</h4>
@@ -205,13 +220,36 @@ function AdminComplaintsContent() {
                  <div className="space-y-6 py-4">
                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subject</p>
-                             <h4 className="text-lg font-bold text-slate-900">{selectedComplaint.subject}</h4>
+                           <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subject</p>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-lg font-bold text-slate-900">{selectedComplaint.subject}</h4>
+                                {getSeverityBadge(selectedComplaint.severity)}
+                              </div>
+                           </div>
+                           <Badge className="bg-white border-slate-200 text-slate-700">{selectedComplaint.category}</Badge>
+                        </div>
+                        <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap mb-6">{selectedComplaint.description}</p>
+                        
+                        {selectedComplaint.evidence && selectedComplaint.evidence.length > 0 && (
+                          <div className="space-y-2 mb-6">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attached Evidence</p>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedComplaint.evidence.map((file: any, i: number) => (
+                                <a 
+                                  key={i} 
+                                  href={file.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium hover:bg-slate-100 transition-colors"
+                                >
+                                  <Paperclip className="h-3.5 w-3.5 text-primary" />
+                                  <span className="truncate max-w-[150px]">{file.name}</span>
+                                </a>
+                              ))}
+                            </div>
                           </div>
-                          <Badge className="bg-white border-slate-200 text-slate-700">{selectedComplaint.category}</Badge>
-                       </div>
-                       <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{selectedComplaint.description}</p>
+                        )}
                        <div className="mt-6 flex items-center gap-3 border-t pt-4">
                           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                              {selectedComplaint.studentName?.[0]}

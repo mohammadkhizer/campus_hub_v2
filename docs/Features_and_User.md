@@ -11,6 +11,7 @@ The Super Admin is responsible for global platform governance, system health, an
 - **Security Monitoring:** Access to global audit logs and security breach reports.
 - **Analytics:** High-level institutional growth metrics and performance trends.
 - **Moderation:** Management of student testimonials and feedback for public display.
+- **Placement Governance:** Oversight of institutional placement statistics and recruiter relations.
 - **Infrastructure:** Oversight of database failover status and system configuration.
 
 ### 2.2 Administrator
@@ -18,7 +19,8 @@ Administrators manage the day-to-day operations of specific departments or insti
 - **Staff Management:** Onboarding and management of Teacher accounts.
 - **Classroom Logistics:** Mapping students and teachers to academic classrooms.
 - **Performance Auditing:** Access to institutional leaderboards and detailed student performance data.
-- **Conflict Resolution:** Review and resolution of student-filed grievances (Complaints).
+- **Conflict Resolution:** Review and resolution of student-filed grievances and Anti-Ragging reports.
+- **Placement Management:** Scheduling recruitment drives, managing recruiter profiles, and shortlisting candidates.
 
 ### 2.3 Teacher
 Teachers are the primary content architects and instructional leads.
@@ -33,6 +35,8 @@ Students are the primary end-users engaged in the learning and assessment proces
 - **Assessments:** Participation in secure, timed quizzes with server-side integrity monitoring (timing, device tracking, and disqualification triggers).
 - **Assignments:** Uploading deliverables and tracking grading status.
 - **Engagement:** Submission of feedback and registration of grievances.
+- **Anti-Ragging Portal:** Secure, high-priority reporting of ragging incidents with evidence upload and privacy protection (EXIF stripping).
+- **Placement Tracker:** Real-time eligibility tracking, academic metric management, and application to campus drives.
 
 
 ## 3. Feature Access Matrix
@@ -47,6 +51,8 @@ Students are the primary end-users engaged in the learning and assessment proces
 | Grievance Resolution | Yes | Yes | No | No |
 | System Log Access | Yes | No | No | No |
 | Profile Management | Yes | Yes | Yes | Yes |
+| Placement Tracking | Yes | Yes | No | Yes |
+| Anti-Ragging Support | Yes | Yes | No | Yes |
 
 ## 4. Workflow Integrity
 - **Redirection Logic:** Upon authentication, users are automatically routed to their respective dashboards (`/superadmin`, `/admin`, `/teacher`, or `/student`) based on their role metadata.

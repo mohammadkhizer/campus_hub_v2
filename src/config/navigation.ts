@@ -12,7 +12,8 @@ import {
   Megaphone,
   UserCircle,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Briefcase
 } from 'lucide-react';
 
 export type Role = 'student' | 'teacher' | 'administrator' | 'superadmin';
@@ -68,6 +69,12 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     roles: ['student'],
   },
   {
+    title: 'Placements',
+    href: '/student/placements',
+    icon: Briefcase,
+    roles: ['student'],
+  },
+  {
     title: 'AI Assistant',
     href: '/student/ai',
     icon: Sparkles,
@@ -108,6 +115,12 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     href: '/superadmin/feedback',
     icon: MessageSquare,
     roles: ['superadmin'],
+  },
+  {
+    title: 'Placements',
+    href: '/admin/placements',
+    icon: Briefcase,
+    roles: ['administrator', 'superadmin'],
   },
   {
     title: 'Grievances',
