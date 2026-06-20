@@ -7,8 +7,8 @@ import { GraduationCap, Loader2, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lu
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import Link from 'next/link';
-import { loginAction, googleLoginAction } from '@/app/actions/auth';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { loginAction } from '@/app/actions/auth';
+import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
@@ -50,22 +50,14 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
-    if (credentialResponse.credential) {
-      setLoading(true);
-      try {
-        const result = await googleLoginAction(credentialResponse.credential);
-        if (result.error) {
-          toast({ variant: "destructive", title: "Google Login Failed", description: result.error });
-        } else {
-          toast({ title: "Welcome back!", description: "Successfully signed in with Google." });
-          await refreshSession();
-        }
-      } catch {
-        toast({ variant: "destructive", title: "Login Failed", description: "An unexpected error occurred." });
-      } finally {
-        setLoading(false);
-      }
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await signIn('google');
+    } catch {
+      toast({ variant: "destructive", title: "Login Failed", description: "Google login failed." });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -209,17 +201,14 @@ export default function LoginPage() {
                       <span className="bg-white px-2 text-muted-foreground font-mono uppercase tracking-widest text-[10px]">Or</span>
                     </div>
                   </div>
-                  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-                    <div className="flex justify-center w-full">
-                      <GoogleLogin
-                        onSuccess={handleGoogleSuccess}
-                        onError={() => toast({ variant: "destructive", title: "Login Failed", description: "Google login failed." })}
-                        theme="outline"
-                        size="large"
-                        width="100%"
-                      />
-                    </div>
-                  </GoogleOAuthProvider>
+                  <button
+                    onClick={handleGoogleSignIn}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-border bg-white hover:bg-neutral-50 transition-colors font-medium text-sm disabled:opacity-50"
+                  >
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                    <span>Continue with Google</span>
+                  </button>
                 </>
               )}
 

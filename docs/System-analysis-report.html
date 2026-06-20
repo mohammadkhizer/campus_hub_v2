@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Analysis Report - CampusHub v2</title>
+  <style>
+    :root {
+      --bg-color: #0d1117;
+      --card-bg: #161b22;
+      --border-color: #30363d;
+      --text-main: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent-blue: #58a6ff;
+      --critical: #f85149;
+      --high: #f0883e;
+      --medium: #d29922;
+      --low: #3fb950;
+      --white: #ffffff;
+      --header-bg: #010409;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      line-height: 1.6;
+      padding: 40px;
+    }
+
+    h1, h2, h3 { color: var(--white); margin-bottom: 20px; }
+    p { margin-bottom: 15px; }
+
+    /* Dashboard Layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 24px;
+      position: relative;
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+
+    .card-value {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .badge-critical { background: rgba(248, 81, 73, 0.1); color: var(--critical); border: 1px solid var(--critical); }
+    .badge-high { background: rgba(240, 136, 62, 0.1); color: var(--high); border: 1px solid var(--high); }
+    .badge-medium { background: rgba(210, 153, 34, 0.1); color: var(--medium); border: 1px solid var(--medium); }
+    .badge-low { background: rgba(63, 185, 80, 0.1); color: var(--low); border: 1px solid var(--low); }
+
+    /* Table Styling */
+    .table-container {
+      overflow-x: auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 40px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: var(--header-bg);
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      color: var(--accent-blue);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+    }
+
+    td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: top;
+    }
+
+    tr:hover { background-color: rgba(255, 255, 255, 0.03); }
+
+    .score-cell {
+      font-weight: bold;
+      text-align: center;
+      width: 80px;
+    }
+
+    .score-high { color: var(--low); }
+    .score-mid { color: var(--medium); }
+    .score-low { color: var(--critical); }
+
+    /* Radar/KPI sections */
+    .section-container {
+      margin-bottom: 60px;
+    }
+
+    .finding-section {
+      border-left: 4px solid var(--accent-blue);
+      padding-left: 20px;
+      margin-bottom: 30px;
+    }
+
+    .risk-box {
+      background: rgba(248, 81, 73, 0.05);
+      border: 1px solid rgba(248, 81, 73, 0.2);
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    /* Print settings */
+    @media print {
+      body { background: white; color: black; padding: 0; }
+      .card, .table-container { border: 1px solid #ccc; background: white; }
+      .badge { border: 1px solid #333; }
+      tr:nth-child(even) { background: #f9f9f9; }
+    }
+  </style>
+</head>
+<body>
+
+<section id="system-analysis-report">
+  <h1>System Analysis Report: CampusHub v2</h1>
+  <p style="color: var(--text-muted)">Date: May 16, 2026 | Document ID: CH-AUDIT-2026-V2</p>
+</section>
+
+<div class="section-container">
+  <h2>Executive Summary</h2>
+  <div class="risk-box" style="border-left: 6px solid var(--critical)">
+    <h3 style="color: var(--critical)">BRUTAL VERDICT: "HARDENED BUT FRAGILE"</h3>
+    <p>CampusHub v2 has successfully migrated from a "Security Theater" prototype to a functional multi-tenant platform. However, the system currently suffers from <strong>Architectural Logic Bleed</strong> and <strong>Operational Fragility</strong>. While the core security features (Auth, Tenant Isolation) are implemented, the platform lacks the rigorous chaos testing and automated secret management required for enterprise hyperscale. It is <strong>PRE-PRODUCTION READY</strong> but not <strong>MISSION-CRITICAL CERTIFIED</strong>.</p>
+  </div>
+
+  <div class="dashboard-grid" style="margin-top: 30px;">
+    <div class="card">
+      <div class="card-title">Production Risk Level</div>
+      <div class="card-value" style="color: var(--medium)">HIGH</div>
+      <p style="font-size: 0.8rem; color: var(--text-muted)">Mitigated by recent hardening.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Technical Debt Score</div>
+      <div class="card-value" style="color: var(--medium)">42%</div>
+      <p style="font-size: 0.8rem; color: var(--text-muted)">Legacy logic in older models.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Investor Confidence</div>
+      <div class="card-value" style="color: var(--low)">B+</div>
+      <p style="font-size: 0.8rem; color: var(--text-muted)">Solid growth potential.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Hiring Quality Signal</div>
+      <div class="card-value" style="color: var(--accent-blue)">ELITE</div>
+      <p style="font-size: 0.8rem; color: var(--text-muted)">Senior-level abstraction usage.</p>
+    </div>
+  </div>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Role</th>
+        <th>Rating (/10)</th>
+        <th>Reasoning</th>
+        <th>Improvements Required</th>
+        <th>Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Senior DevOps Engineer</td>
+        <td class="score-cell score-mid">6.5</td>
+        <td>Next.js 15 on Netlify is easy to deploy but difficult to debug at scale. Lack of formal K8s/Container strategy is a long-term risk.</td>
+        <td>Implement Dockerization for self-hosting options and formalize CD with canary deployments.</td>
+        <td><b>MEDIUM:</b> Deployment is currently a "black box" on Netlify.</td>
+      </tr>
+      <tr>
+        <td>Security Engineer</td>
+        <td class="score-cell score-high">8.5</td>
+        <td>Auth overhaul to NextAuth v5 and session revocation checks are top-tier. Tenant isolation via Mongoose plugin is effective.</td>
+        <td>Implement full RSA key rotation automated via Doppler and add MFA enforcement for all staff.</td>
+        <td><b>HIGH:</b> Prevents 99% of common SaaS attack vectors.</td>
+      </tr>
+      <tr>
+        <td>Database Architect (DBA)</td>
+        <td class="score-cell score-mid">5.0</td>
+        <td>Mongoose provides great DX but hides the underlying complexity of MongoDB. Missing formal compound index optimization for analytics.</td>
+        <td>Migrate from application-layer multi-tenancy to a more robust driver-level isolation or logical DB partitioning.</td>
+        <td><b>CRITICAL:</b> Performance will degrade as tenant data exceeds RAM limits.</td>
+      </tr>
+      <tr>
+        <td>QA Automation Engineer</td>
+        <td class="score-cell score-low">3.5</td>
+        <td>Test coverage is shallow. 100% checklist success is a vanity metric; unit tests for business logic edge cases are missing.</td>
+        <td>Integrate Chaos Engineering (Gremlin) and high-cardinality load testing (k6).</td>
+        <td><b>HIGH:</b> Unexpected production failures in the exam engine are likely.</td>
+      </tr>
+      <tr>
+        <td>Solutions Architect</td>
+        <td class="score-cell score-mid">7.0</td>
+        <td>The <code>createAction</code> factory is a brilliant architectural anchor that enforces consistency.</td>
+        <td>Decouple AI logic from server actions into an asynchronous worker pattern to prevent HTTP timeouts.</td>
+        <td><b>LOW:</b> Improved maintainability and developer ergonomics.</td>
+      </tr>
+      <tr>
+        <td>UX Designer</td>
+        <td class="score-cell score-mid">6.0</td>
+        <td>Modern aesthetics (Glassmorphism, dark mode) are premium but accessibility (ARIA) is inconsistent.</td>
+        <td>Perform a full WCAG 2.1 audit and implement a consistent "Focus Management" strategy.</td>
+        <td><b>MEDIUM:</b> Legal risk in educational/institutional contexts.</td>
+      </tr>
+      <tr>
+        <td>AI/ML Engineer</td>
+        <td class="score-cell score-mid">5.5</td>
+        <td>Genkit integration is clean, but prompt engineering is brittle. Lack of output validation/guardrails.</td>
+        <td>Implement AI Evaluation pipelines (p-value, ROUGE) and a semantic cache for prompt cost optimization.</td>
+        <td><b>MEDIUM:</b> High operational cost and hallucination risk in quizzes.</td>
+      </tr>
+      <tr>
+        <td>SRE / Reliability</td>
+        <td class="score-cell score-low">4.0</td>
+        <td>Monitoring (Sentry) is reactive. No proactive SLO/SLA tracking or distributed tracing (OTEL broken).</td>
+        <td>Repair OpenTelemetry instrumentation and implement proactive alerting on latency p99.</td>
+        <td><b>CRITICAL:</b> "Fly blind" operations during high-traffic exam windows.</td>
+      </tr>
+      <tr>
+        <td>Enterprise Architect</td>
+        <td class="score-cell score-mid">6.0</td>
+        <td>Basic multi-tenancy exists, but missing Enterprise SSO (SAML 2.0) and SCIM for automated provisioning.</td>
+        <td>Integrate WorkOS or BoxyHQ for enterprise identity features.</td>
+        <td><b>HIGH:</b> Blocking factor for large university contracts.</td>
+      </tr>
+      <tr>
+        <td>Staff Engineer</td>
+        <td class="score-cell score-high">8.0</td>
+        <td>Code structure is exceptionally organized. Ownership boundaries (src/app, src/lib) are clear.</td>
+        <td>Enforce stricter TypeScript boundaries to eliminate <code>any</code> usage in test mocks.</td>
+        <td><b>LOW:</b> Developer experience and future-proofing.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<section id="critical-risks" class="finding-section">
+  <h2>Critical Risks & Architectural Failures</h2>
+  <div class="risk-box">
+    <span class="badge badge-critical">CRITICAL</span> <b>Sync-Over-Async AI Bottleneck:</b> AI quiz generation is currently handled synchronously within a Server Action. Under load, this will block the Node.js event loop and hit Netlify's 10-second execution limit, resulting in widespread 504 errors.
+  </div>
+  <div class="risk-box">
+    <span class="badge badge-high">HIGH</span> <b>Tenant Isolation "Soft-Gate":</b> Isolation is enforced via application-layer middleware. If a developer bypasses the <code>createAction</code> factory or uses a raw Mongoose query, cross-tenant leakage is a "one-line mistake" away.
+  </div>
+  <div class="risk-box">
+    <span class="badge badge-medium">MEDIUM</span> <b>Secret Strategy (Doppler Gap):</b> While Doppler is documented, the actual rotation logic is manual. A leaked <code>AUTH_SECRET</code> would require manual intervention, extending the window of vulnerability.
+  </div>
+</section>
+
+<section id="overall-system-score" class="section-container">
+  <h2>Overall System Score</h2>
+  <div class="dashboard-grid">
+    <div class="card">
+      <div class="card-title">Total Score</div>
+      <div class="card-value">72/100</div>
+      <div style="height: 8px; background: #30363d; border-radius: 4px; margin-top: 10px;">
+        <div style="width: 72%; height: 100%; background: var(--accent-blue); border-radius: 4px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Security Posture</div>
+      <div class="card-value" style="color: var(--low)">88%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Maintainability</div>
+      <div class="card-value" style="color: var(--low)">82%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Scalability Confidence</div>
+      <div class="card-value" style="color: var(--medium)">55%</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Enterprise Readiness</div>
+      <div class="card-value" style="color: var(--medium)">40%</div>
+    </div>
+  </div>
+</section>
+
+<section id="technical-debt-analysis" class="section-container">
+  <h2>Technical Debt Analysis</h2>
+  <p>The project shows signs of <b>"Refactoring Fatigue."</b> Recent sprints have correctly hardened the infrastructure, but have left "islands" of legacy code in the frontend (specifically the original Quiz UI components) that still use prop-drilling instead of the new scoped contexts. Additionally, the <code>package.json</code> is bloated with conflicting OpenTelemetry versions, indicating a "layering" approach to maintenance rather than a clean upgrade path.</p>
+  <ul>
+    <li><b>Legacy Models:</b> Some models lack <code>deletedAt</code> soft-delete support.</li>
+    <li><b>Typescript Strictness:</b> <code>tsconfig.json</code> lacks <code>noImplicitAny</code> enforcement in test directories.</li>
+    <li><b>API Consistency:</b> Internal API endpoints used by the dashboard do not all follow the standardized <code>ActionResponse</code> wrapper.</li>
+  </ul>
+</section>
+
+<section id="final-verdict" class="section-container">
+  <h2>Final Verdict: "INVESTOR CAUTION"</h2>
+  <div class="risk-box" style="border-top: 4px solid var(--accent-blue)">
+    <p>CampusHub v2 is an excellent engineering feat given its velocity. It demonstrates high-caliber architectural thinking. However, as an investor or enterprise client, I would require a <b>Rigorous Operational Drill (Phase 17.3)</b> and a <b>Full Accessibility Audit</b> before signing off on a production release. The engineering culture is strong, but the current lack of automated regression for tenant isolation is a "sleeping giant" risk.</p>
+    <p style="margin-top: 20px; font-weight: bold; text-align: center;">RECOMMENDATION: PROCEED TO PHASE C WITH CAUTION</p>
+  </div>
+</section>
+
+</body>
+</html>

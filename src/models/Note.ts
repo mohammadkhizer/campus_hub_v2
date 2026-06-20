@@ -1,4 +1,20 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
+import { tenantPlugin } from '@/lib/mongoose-tenant-plugin';
+
+export interface INote extends Document {
+  course: mongoose.Types.ObjectId;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  fileType: string;
+  vectorized: boolean;
+  embeddingStatus: 'none' | 'pending' | 'completed' | 'failed';
+  metadata?: {
+    pageCount?: number;
+    chunks?: number;
+  };
+  institutionId: string;
+}
 
 const NoteSchema = new mongoose.Schema({
   course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
@@ -18,8 +34,6 @@ const NoteSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-if (mongoose.models.Note) {
-  delete mongoose.models.Note;
-}
+NoteSchema.plugin(tenantPlugin);
 
-export default mongoose.model('Note', NoteSchema);
+export default mongoose.models.Note || mongoose.model<INote>('Note', NoteSchema);

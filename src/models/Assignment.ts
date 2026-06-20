@@ -1,4 +1,15 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
+import { tenantPlugin } from '@/lib/mongoose-tenant-plugin';
+
+export interface IAssignment extends Document {
+  course: mongoose.Types.ObjectId;
+  title: string;
+  description: string;
+  deadline: Date;
+  attachmentUrl?: string;
+  totalMarks: number;
+  institutionId: string;
+}
 
 const AssignmentSchema = new mongoose.Schema({
   course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
@@ -9,8 +20,6 @@ const AssignmentSchema = new mongoose.Schema({
   totalMarks: { type: Number, default: 100 },
 }, { timestamps: true });
 
-if (mongoose.models.Assignment) {
-  delete mongoose.models.Assignment;
-}
+AssignmentSchema.plugin(tenantPlugin);
 
-export default mongoose.model('Assignment', AssignmentSchema);
+export default mongoose.models.Assignment || mongoose.model<IAssignment>('Assignment', AssignmentSchema);

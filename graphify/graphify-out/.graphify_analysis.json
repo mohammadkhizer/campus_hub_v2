@@ -1,0 +1,758 @@
+{
+  "communities": {
+    "0": [
+      "actions_courses_createcourse",
+      "actions_courses_deleteannouncement",
+      "actions_courses_deleteassignment",
+      "actions_courses_deletenote",
+      "actions_courses_enrollincourse",
+      "actions_courses_getcoursedetail",
+      "actions_courses_notifystudentsincourse",
+      "actions_courses_saveannouncement",
+      "actions_courses_saveassignment",
+      "actions_courses_savenote",
+      "actions_courses_updateannouncement",
+      "actions_courses_updateassignment",
+      "actions_courses_updatecourse",
+      "actions_courses_updatenote",
+      "actions_quizzes_serversavequiz",
+      "actions_upload_uploadfiletocloudinary",
+      "complaints_page_handlefileupload",
+      "create_page_addquestion",
+      "create_page_checkcourse",
+      "create_page_generateaiquestions",
+      "create_page_handlefileupload",
+      "create_page_handlemanualsave",
+      "create_page_handlesubmit",
+      "create_page_loadfaculty",
+      "create_page_updatechoice",
+      "create_page_updatequestion",
+      "edit_page_addquestion",
+      "edit_page_checkcourseandquiz",
+      "edit_page_generateaiquestions",
+      "edit_page_handlemanualsave",
+      "edit_page_removequestion",
+      "edit_page_updatechoice",
+      "edit_page_updatequestion",
+      "hooks_use_toast_addtoremovequeue",
+      "hooks_use_toast_dispatch",
+      "hooks_use_toast_genid",
+      "hooks_use_toast_reducer",
+      "hooks_use_toast_toast",
+      "id_page_getdownloadurl",
+      "id_page_handleenroll",
+      "id_page_handlefileupload",
+      "id_page_handlesubmit",
+      "id_page_loaddata",
+      "lib_mail_service_generateupdatetemplate",
+      "lib_mail_service_sendemail",
+      "manage_page_handledeleteannouncement",
+      "manage_page_handledeleteassignment",
+      "manage_page_handledeletenote",
+      "manage_page_handlefileupload",
+      "manage_page_handlegeneratequiz",
+      "manage_page_handlesaveannouncement",
+      "manage_page_handlesaveassignment",
+      "manage_page_handlesavenote",
+      "manage_page_handleupdateannouncement",
+      "manage_page_handleupdateassignment",
+      "manage_page_handleupdatenote",
+      "manage_page_loaddata",
+      "src_app_actions_courses_ts",
+      "src_app_actions_upload_ts",
+      "src_app_courses_create_page_tsx",
+      "src_app_courses_edit_id_page_tsx",
+      "src_app_courses_id_manage_page_tsx",
+      "src_app_courses_id_page_tsx",
+      "src_app_courses_id_quizzes_create_page_tsx",
+      "src_app_courses_id_quizzes_quizid_edit_page_tsx",
+      "src_hooks_use_toast_ts",
+      "src_lib_mail_service_ts"
+    ],
+    "1": [
+      "actions_analytics_servergetanalyticsdata",
+      "actions_courses_checkenrollment",
+      "actions_feedback_serverdeletefeedback",
+      "actions_feedback_servergetdisplayedfeedbacks",
+      "actions_feedback_servergetfeedbacks",
+      "actions_feedback_serversubmitfeedback",
+      "actions_feedback_serverupdatefeedbackstatus",
+      "actions_quizzes_serverdeleteattempt",
+      "actions_quizzes_serverdeletequiz",
+      "actions_quizzes_servergetallattempts",
+      "actions_quizzes_servergetattempt",
+      "actions_quizzes_servergetattempts",
+      "actions_quizzes_servergetquiz",
+      "actions_quizzes_servergetquizattempts",
+      "actions_quizzes_servergetquizzes",
+      "actions_quizzes_servergradeattempt",
+      "actions_quizzes_serversaveattempt",
+      "analytics_page_fetchanalytics",
+      "app_page_fetchfeedbacks",
+      "components_route_guard_routeguard",
+      "feedback_page_fetchfeedbacks",
+      "feedback_page_handledelete",
+      "feedback_page_handlesubmit",
+      "feedback_page_handletoggledisplay",
+      "id_page_fetchquiz",
+      "id_page_handleblur",
+      "id_page_handlesecuritybreach",
+      "id_page_handlevisibilitychange",
+      "id_page_preventcontextmenu",
+      "id_page_preventcopypaste",
+      "leaderboard_page_fetchdata",
+      "leaderboard_page_handledeleteattempt",
+      "lib_store_deleteattempt",
+      "lib_store_deletefeedback",
+      "lib_store_deletequiz",
+      "lib_store_getallattempts",
+      "lib_store_getanalyticsdata",
+      "lib_store_getattempts",
+      "lib_store_getdisplayedfeedbacks",
+      "lib_store_getfeedbacks",
+      "lib_store_getquiz",
+      "lib_store_getquizattempts",
+      "lib_store_getquizzes",
+      "lib_store_saveattempt",
+      "lib_store_submitfeedback",
+      "lib_store_updatefeedbackstatus",
+      "quizzes_page_clearfilters",
+      "quizzes_page_handlefocus",
+      "quizzes_page_loadquizzes",
+      "review_page_fetchdata",
+      "review_page_handlesavegrade",
+      "src_app_actions_analytics_ts",
+      "src_app_actions_feedback_ts",
+      "src_app_actions_quizzes_ts",
+      "src_app_admin_leaderboard_page_tsx",
+      "src_app_feedback_page_tsx",
+      "src_app_page_tsx",
+      "src_app_quizzes_attempts_attemptid_review_page_tsx",
+      "src_app_quizzes_id_leaderboard_page_tsx",
+      "src_app_quizzes_id_page_tsx",
+      "src_app_quizzes_page_tsx",
+      "src_app_superadmin_analytics_page_tsx",
+      "src_app_superadmin_feedback_page_tsx",
+      "src_components_route_guard_tsx",
+      "src_lib_store_ts"
+    ],
+    "2": [
+      "actions_auth_createstudentaction",
+      "actions_auth_createteacheraction",
+      "actions_auth_deletecoordinatoraction",
+      "actions_auth_getsessionaction",
+      "actions_auth_getstudentsaction",
+      "actions_auth_getusersbyroleaction",
+      "actions_auth_logoutaction",
+      "actions_auth_promotetoadmin",
+      "actions_auth_updatecoordinatoraction",
+      "actions_classrooms_addstudenttoclassroom",
+      "actions_classrooms_assigncoursestoclassroom",
+      "actions_classrooms_deleteclassroom",
+      "actions_classrooms_getclassrooms",
+      "actions_classrooms_getstudentclassrooms",
+      "actions_classrooms_removestudentfromclassroom",
+      "actions_courses_deletecourse",
+      "actions_courses_getcourses",
+      "actions_courses_getenrolledcourses",
+      "actions_courses_updatecoursestatus",
+      "actions_privacy_acceptprivacypolicyaction",
+      "actions_privacy_deleteuserdataaction",
+      "actions_privacy_exportuserdataaction",
+      "actions_student_getstudentdeadlinesaction",
+      "actions_student_getstudentmetricsaction",
+      "actions_teacher_getteachersubmissions",
+      "actions_teacher_gradesubmissionaction",
+      "actions_teacher_updatesubmissionstatusaction",
+      "ai_page_aihubpage",
+      "app_layout_rootlayout",
+      "classrooms_page_handledelete",
+      "classrooms_page_load",
+      "classrooms_page_loadclassrooms",
+      "components_cookieconsent_cookieconsent",
+      "context_auth_context_authprovider",
+      "dashboard_page_handlecreatestudent",
+      "dashboard_page_handlecreateteacher",
+      "dashboard_page_handledelete",
+      "dashboard_page_handledeleteclassroom",
+      "dashboard_page_handledeletecoordinator",
+      "dashboard_page_handlefocus",
+      "dashboard_page_handlestatusupdate",
+      "dashboard_page_handleupdatecoordinator",
+      "dashboard_page_loaddata",
+      "dashboard_page_openeditdialog",
+      "dashboard_page_togglestatus",
+      "lib_dto_todto",
+      "src_app_actions_auth_ts",
+      "src_app_actions_classrooms_ts",
+      "src_app_actions_privacy_ts",
+      "src_app_actions_student_ts",
+      "src_app_actions_teacher_ts",
+      "src_app_admin_classrooms_page_tsx",
+      "src_app_admin_dashboard_page_tsx",
+      "src_app_dashboard_classrooms_page_tsx",
+      "src_app_layout_tsx",
+      "src_app_student_ai_page_tsx",
+      "src_app_student_dashboard_page_tsx",
+      "src_app_teacher_dashboard_page_tsx",
+      "src_components_cookieconsent_tsx",
+      "src_context_auth_context_tsx",
+      "src_lib_dto_ts"
+    ],
+    "3": [
+      "hooks_use_mobile_useismobile",
+      "lib_utils_cn",
+      "src_components_ui_accordion_tsx",
+      "src_components_ui_alert_dialog_tsx",
+      "src_components_ui_alert_tsx",
+      "src_components_ui_avatar_tsx",
+      "src_components_ui_button_tsx",
+      "src_components_ui_calendar_tsx",
+      "src_components_ui_card_tsx",
+      "src_components_ui_carousel_tsx",
+      "src_components_ui_chart_tsx",
+      "src_components_ui_checkbox_tsx",
+      "src_components_ui_dialog_tsx",
+      "src_components_ui_dropdown_menu_tsx",
+      "src_components_ui_form_tsx",
+      "src_components_ui_input_tsx",
+      "src_components_ui_label_tsx",
+      "src_components_ui_menubar_tsx",
+      "src_components_ui_popover_tsx",
+      "src_components_ui_progress_tsx",
+      "src_components_ui_radio_group_tsx",
+      "src_components_ui_scroll_area_tsx",
+      "src_components_ui_select_tsx",
+      "src_components_ui_separator_tsx",
+      "src_components_ui_sheet_tsx",
+      "src_components_ui_sidebar_tsx",
+      "src_components_ui_skeleton_tsx",
+      "src_components_ui_slider_tsx",
+      "src_components_ui_switch_tsx",
+      "src_components_ui_table_tsx",
+      "src_components_ui_tabs_tsx",
+      "src_components_ui_textarea_tsx",
+      "src_components_ui_toast_tsx",
+      "src_components_ui_tooltip_tsx",
+      "src_hooks_use_mobile_tsx",
+      "src_lib_utils_ts",
+      "tests_utils_test_ts",
+      "ui_carousel_usecarousel",
+      "ui_chart_cn",
+      "ui_chart_usechart",
+      "ui_sidebar_cn",
+      "ui_sidebar_handlekeydown",
+      "ui_sidebar_usesidebar",
+      "ui_skeleton_skeleton"
+    ],
+    "4": [
+      "actions_ai_generatequizquestionsaction",
+      "actions_auth_googleloginaction",
+      "actions_auth_loginaction",
+      "actions_auth_signupaction",
+      "actions_courses_getsubmissions",
+      "actions_courses_submitassignment",
+      "admin_page_adminredirect",
+      "assignmentid_page_assignmentdetailpage",
+      "components_navbar_handleclick",
+      "components_navbar_resolvehref",
+      "config_navigation_getdashboardhref",
+      "context_auth_context_useauth",
+      "create_page_handlegenerateai",
+      "dashboard_page_dashboardredirect",
+      "flows_generate_quiz_questions_generatequizquestions",
+      "hooks_use_toast_usetoast",
+      "lib_rate_limit_checkratelimit",
+      "login_page_loginpage",
+      "signup_page_handlegooglesuccess",
+      "signup_page_handlesignup",
+      "src_ai_dev_ts",
+      "src_ai_flows_generate_quiz_questions_ts",
+      "src_app_actions_ai_ts",
+      "src_app_admin_page_tsx",
+      "src_app_courses_id_assignments_assignmentid_page_tsx",
+      "src_app_dashboard_page_tsx",
+      "src_app_login_page_tsx",
+      "src_app_signup_page_tsx",
+      "src_app_superadmin_page_tsx",
+      "src_components_footer_tsx",
+      "src_components_navbar_tsx",
+      "src_components_ui_toaster_tsx",
+      "src_config_navigation_ts",
+      "src_lib_rate_limit_ts",
+      "src_middleware_middleware",
+      "src_middleware_ts",
+      "superadmin_page_superadminredirect"
+    ],
+    "5": [
+      "actions_auth_updateprofileaction",
+      "actions_superadmin_generatesystemanalysisaction",
+      "actions_superadmin_getsystemactivitylogs",
+      "actions_superadmin_getsystemstats",
+      "actions_superadmin_manageuserroleaction",
+      "ai_aichat_handlefilechange",
+      "ai_aichat_handlesend",
+      "dashboard_page_handlegeneratereport",
+      "dashboard_page_handlerolechange",
+      "dashboard_page_loadstats",
+      "dashboard_page_rolebadge",
+      "flows_generate_analysis_report_generateanalysisreport",
+      "flows_student_ai_chatwithcourseaction",
+      "flows_student_ai_chatwithpdfaction",
+      "flows_student_ai_generatestudyplanaction",
+      "flows_student_ai_getperformanceinsightsaction",
+      "flows_student_ai_summarizelectureaction",
+      "lib_action_factory_createaction",
+      "lib_pdf_service_extracttextfrompdf",
+      "lib_vector_store_chunktext",
+      "lib_vector_store_generateembedding",
+      "lib_vector_store_queryvectorstore",
+      "logs_page_levelbadge",
+      "logs_page_loadlogs",
+      "src_ai_flows_generate_analysis_report_ts",
+      "src_ai_flows_student_ai_ts",
+      "src_app_actions_superadmin_ts",
+      "src_app_superadmin_dashboard_page_tsx",
+      "src_app_superadmin_logs_page_tsx",
+      "src_components_ai_aichat_tsx",
+      "src_lib_action_factory_ts",
+      "src_lib_pdf_service_ts",
+      "src_lib_vector_store_ts",
+      "tests_action_factory_test_ts"
+    ],
+    "6": [
+      "actions_courses_gradesubmission",
+      "actions_placements_applytodriveaction",
+      "actions_placements_createplacementdriveaction",
+      "actions_placements_getallapplicationsaction",
+      "actions_placements_geteligibledrivesaction",
+      "actions_placements_getplacementprofileaction",
+      "actions_placements_updateapplicationstatusaction",
+      "actions_placements_updateplacementprofileaction",
+      "actions_placements_verifystudentacademicsaction",
+      "db_route_get",
+      "lib_mongoose_dbconnect",
+      "placements_page_fetchdata",
+      "placements_page_fetchdrives",
+      "placements_page_handleapply",
+      "placements_page_handlecreatedrive",
+      "placements_page_handlestatusupdate",
+      "placements_page_handleupdateprofile",
+      "placements_page_handleverifyacademics",
+      "placements_page_handleviewapplicants",
+      "services_course_service_courseservice",
+      "services_course_service_courseservice_createcourse",
+      "services_course_service_courseservice_getcourses",
+      "src_app_actions_placements_ts",
+      "src_app_admin_placements_page_tsx",
+      "src_app_api_health_db_route_ts",
+      "src_app_student_placements_page_tsx",
+      "src_services_course_service_ts"
+    ],
+    "7": [
+      "actions_profile_getmyprofile",
+      "actions_profile_updatemyprofile",
+      "lib_backup_synctobackup",
+      "lib_logger_logger",
+      "lib_logger_logger_error",
+      "lib_logger_logger_format",
+      "lib_logger_logger_info",
+      "lib_logger_logger_log",
+      "lib_logger_logger_masksensitivedata",
+      "lib_logger_logger_security",
+      "lib_logger_logger_warn",
+      "lib_mongoose_isusingbackup",
+      "lib_safe_action_createsafeaction",
+      "profile_page_handlechangepassword",
+      "profile_page_handlesaveprofile",
+      "profile_page_loadprofile",
+      "src_app_actions_profile_ts",
+      "src_app_profile_page_tsx",
+      "src_lib_backup_ts",
+      "src_lib_logger_ts",
+      "src_lib_mongoose_ts",
+      "src_lib_safe_action_ts"
+    ],
+    "8": [
+      "actions_classrooms_getclassroomdetail",
+      "actions_classrooms_getstudentaccessiblecourses",
+      "actions_classrooms_saveclassroom",
+      "courses_page_loadcourses",
+      "create_page_addblankquestion",
+      "create_page_blank_question",
+      "create_page_handlesave",
+      "create_page_loadalldata",
+      "create_page_removequestion",
+      "create_page_setchoice",
+      "create_page_togglecourse",
+      "create_page_togglestudent",
+      "create_page_validatequestions",
+      "lib_store_savequiz",
+      "src_app_admin_classrooms_create_page_tsx",
+      "src_app_admin_create_page_tsx",
+      "src_app_courses_page_tsx",
+      "src_components_dashboard_coursessection_tsx",
+      "src_components_dashboard_recentquizzeswidget_tsx",
+      "src_components_ui_badge_tsx",
+      "ui_badge_badge"
+    ],
+    "9": [
+      "actions_complaints_getallcomplaintsaction",
+      "actions_complaints_getstudentcomplaintsaction",
+      "actions_complaints_submitcomplaintaction",
+      "actions_complaints_updatecomplaintstatusaction",
+      "complaints_page_getseveritybadge",
+      "complaints_page_getstatusbadge",
+      "complaints_page_handlesubmit",
+      "complaints_page_handleupdate",
+      "complaints_page_loadcomplaints",
+      "complaints_page_removeevidence",
+      "src_app_actions_complaints_ts",
+      "src_app_admin_complaints_page_tsx",
+      "src_app_student_complaints_page_tsx"
+    ],
+    "10": [
+      "lib_api_response_createerrorresponse",
+      "lib_api_response_createsuccessresponse",
+      "src_lib_api_response_ts"
+    ],
+    "11": [
+      "app_global_error_globalerror",
+      "src_app_global_error_tsx"
+    ],
+    "12": [
+      "app_not_found_notfound",
+      "src_app_not_found_tsx"
+    ],
+    "13": [
+      "id_page_editclassroompage",
+      "src_app_admin_classrooms_edit_id_page_tsx"
+    ],
+    "14": [
+      "src_app_superadmin_test_page_tsx",
+      "test_page_testpage"
+    ],
+    "15": [
+      "scripts_migrate_runmigration",
+      "src_scripts_migrate_ts"
+    ],
+    "16": [
+      "scripts_seed_superadmin_seedsuperadmin",
+      "src_scripts_seed_superadmin_ts"
+    ],
+    "17": [
+      "scripts_seed_seed",
+      "src_scripts_seed_ts"
+    ],
+    "18": [
+      "graphify_step2_py"
+    ],
+    "19": [
+      "jest_config_js"
+    ],
+    "20": [
+      "jest_setup_js"
+    ],
+    "21": [
+      "next_env_d_ts"
+    ],
+    "22": [
+      "next_config_ts"
+    ],
+    "23": [
+      "postcss_config_mjs"
+    ],
+    "24": [
+      "tailwind_config_ts"
+    ],
+    "25": [
+      "src_ai_genkit_ts"
+    ],
+    "26": [
+      "src_components_dashboard_classroomssection_tsx"
+    ],
+    "27": [
+      "src_components_dashboard_deadlineswidget_tsx"
+    ],
+    "28": [
+      "src_components_dashboard_metricswidget_tsx"
+    ],
+    "29": [
+      "src_components_ui_collapsible_tsx"
+    ],
+    "30": [
+      "src_lib_constants_ts"
+    ],
+    "31": [
+      "src_lib_env_ts"
+    ],
+    "32": [
+      "src_lib_placeholder_images_ts"
+    ],
+    "33": [
+      "src_lib_types_ts"
+    ],
+    "34": [
+      "src_models_announcement_ts"
+    ],
+    "35": [
+      "src_models_assignment_ts"
+    ],
+    "36": [
+      "src_models_attempt_ts"
+    ],
+    "37": [
+      "src_models_auditlog_ts"
+    ],
+    "38": [
+      "src_models_classroom_ts"
+    ],
+    "39": [
+      "src_models_complaint_ts"
+    ],
+    "40": [
+      "src_models_course_ts"
+    ],
+    "41": [
+      "src_models_enrollment_ts"
+    ],
+    "42": [
+      "src_models_feedback_ts"
+    ],
+    "43": [
+      "src_models_note_ts"
+    ],
+    "44": [
+      "src_models_placementapplication_ts"
+    ],
+    "45": [
+      "src_models_placementdrive_ts"
+    ],
+    "46": [
+      "src_models_placementprofile_ts"
+    ],
+    "47": [
+      "src_models_quiz_ts"
+    ],
+    "48": [
+      "src_models_submission_ts"
+    ],
+    "49": [
+      "src_models_systemlog_ts"
+    ],
+    "50": [
+      "src_models_user_ts"
+    ],
+    "51": [
+      "src_scripts_check_node_env_js"
+    ],
+    "52": [
+      "src_store_index_ts"
+    ],
+    "53": [
+      "src_types_index_ts"
+    ]
+  },
+  "cohesion": {
+    "0": 0.07,
+    "1": 0.06,
+    "2": 0.08,
+    "3": 0.05,
+    "4": 0.08,
+    "5": 0.1,
+    "6": 0.15,
+    "7": 0.15,
+    "8": 0.12,
+    "9": 0.31,
+    "10": 0.67,
+    "11": 1.0,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0,
+    "27": 1.0,
+    "28": 1.0,
+    "29": 1.0,
+    "30": 1.0,
+    "31": 1.0,
+    "32": 1.0,
+    "33": 1.0,
+    "34": 1.0,
+    "35": 1.0,
+    "36": 1.0,
+    "37": 1.0,
+    "38": 1.0,
+    "39": 1.0,
+    "40": 1.0,
+    "41": 1.0,
+    "42": 1.0,
+    "43": 1.0,
+    "44": 1.0,
+    "45": 1.0,
+    "46": 1.0,
+    "47": 1.0,
+    "48": 1.0,
+    "49": 1.0,
+    "50": 1.0,
+    "51": 1.0,
+    "52": 1.0,
+    "53": 1.0
+  },
+  "gods": [
+    {
+      "id": "lib_mongoose_dbconnect",
+      "label": "dbConnect()",
+      "degree": 86
+    },
+    {
+      "id": "actions_auth_getsessionaction",
+      "label": "getSessionAction()",
+      "degree": 66
+    },
+    {
+      "id": "hooks_use_toast_toast",
+      "label": "toast()",
+      "degree": 59
+    },
+    {
+      "id": "context_auth_context_useauth",
+      "label": "useAuth()",
+      "degree": 41
+    },
+    {
+      "id": "lib_utils_cn",
+      "label": "cn()",
+      "degree": 36
+    },
+    {
+      "id": "hooks_use_toast_usetoast",
+      "label": "useToast()",
+      "degree": 30
+    },
+    {
+      "id": "components_route_guard_routeguard",
+      "label": "RouteGuard()",
+      "degree": 28
+    },
+    {
+      "id": "ui_badge_badge",
+      "label": "Badge()",
+      "degree": 27
+    },
+    {
+      "id": "lib_dto_todto",
+      "label": "toDTO()",
+      "degree": 21
+    },
+    {
+      "id": "lib_logger_logger",
+      "label": "Logger",
+      "degree": 21
+    }
+  ],
+  "surprises": [
+    {
+      "source": "loadFaculty()",
+      "target": "getUsersByRoleAction()",
+      "source_files": [
+        "src/app/courses/create/page.tsx",
+        "src/app/actions/auth.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities; peripheral node `loadFaculty()` unexpectedly reaches hub `getUsersByRoleAction()`"
+    },
+    {
+      "source": "middleware()",
+      "target": "checkRateLimit()",
+      "source_files": [
+        "src/middleware.ts",
+        "src/lib/rate-limit.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `middleware()` unexpectedly reaches hub `checkRateLimit()`"
+    },
+    {
+      "source": "generateAnalysisReport()",
+      "target": "checkRateLimit()",
+      "source_files": [
+        "src/ai/flows/generate-analysis-report.ts",
+        "src/lib/rate-limit.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "summarizeLectureAction()",
+      "target": "createAction()",
+      "source_files": [
+        "src/ai/flows/student-ai.ts",
+        "src/lib/action-factory.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `summarizeLectureAction()` unexpectedly reaches hub `createAction()`"
+    },
+    {
+      "source": "getPerformanceInsightsAction()",
+      "target": "createAction()",
+      "source_files": [
+        "src/ai/flows/student-ai.ts",
+        "src/lib/action-factory.ts"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `getPerformanceInsightsAction()` unexpectedly reaches hub `createAction()`"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `dbConnect()` connect `Community 6` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 7`, `Community 8`, `Community 9`?",
+      "why": "High betweenness centrality (0.177) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `cn()` connect `Community 3` to `Community 8`, `Community 5`?",
+      "why": "High betweenness centrality (0.161) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `Badge()` connect `Community 8` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 9`?",
+      "why": "High betweenness centrality (0.153) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 85 inferred relationships involving `dbConnect()` (e.g. with `serverGetAnalyticsData()` and `loginAction()`) actually correct?",
+      "why": "`dbConnect()` has 85 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 45 inferred relationships involving `getSessionAction()` (e.g. with `RootLayout()` and `dbConnect()`) actually correct?",
+      "why": "`getSessionAction()` has 45 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 56 inferred relationships involving `toast()` (e.g. with `handleDelete()` and `handleSave()`) actually correct?",
+      "why": "`toast()` has 56 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 6 inferred relationships involving `useAuth()` (e.g. with `AdminRedirect()` and `AssignmentDetailPage()`) actually correct?",
+      "why": "`useAuth()` has 6 INFERRED edges - model-reasoned connections that need verification."
+    }
+  ]
+}

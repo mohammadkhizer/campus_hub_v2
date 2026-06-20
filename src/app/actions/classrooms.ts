@@ -3,68 +3,73 @@
 import dbConnect from '@/lib/mongoose';
 import ClassroomModel from '@/models/Classroom';
 import CourseModel from '@/models/Course';
-import UserModel from '@/models/User';
-import { getSessionAction } from '@/app/actions/auth';
 import { revalidatePath } from 'next/cache';
 import { toDTO } from '@/lib/dto';
-
-/**
- * Fetch all classrooms with populated student/course counts.
- * - Administrators see ALL classrooms.
- * - Teachers see classrooms that contain courses they are faculty of.
- */
+import { createAction } from '@/lib/action-factory';
+import { USER_ROLES } from '@/lib/constants';
+import { z } from 'zod';
 export async function getClassrooms() {
-  await dbConnect();
-  const session = await getSessionAction();
-  if (!session) return [];
+  return createAction({
+    name: 'getClassrooms',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (_, { user: session }) => {
+      let query: any = { institutionId: session!.institutionId };
 
-  let query: any = {};
+      if (session!.role === USER_ROLES.TEACHER) {
+        const teacherCourses = await CourseModel.find({ 
+          faculty: session!.id, 
+          institutionId: session!.institutionId 
+        }).select('_id').lean();
+        const courseIds = teacherCourses.map((c: any) => c._id);
+        query.courses = { $in: courseIds };
+      }
 
-  if (session.role === 'teacher') {
-    // Find courses assigned to this teacher
-    const teacherCourses = await CourseModel.find({ faculty: session.id }).select('_id').lean();
-    const courseIds = teacherCourses.map(c => c._id);
-    query = { courses: { $in: courseIds } };
-  }
+      const classrooms = await ClassroomModel.find(query)
+        .sort({ createdAt: -1 })
+        .populate('createdBy', 'firstName lastName')
+        .lean();
+        
+      const dtoClassrooms = toDTO<any[]>(classrooms);
 
-  const classrooms = await ClassroomModel.find(query)
-    .sort({ createdAt: -1 })
-    .populate('createdBy', 'firstName lastName')
-    .lean();
-    
-  const dtoClassrooms = toDTO<any[]>(classrooms);
-
-  return dtoClassrooms.map((c: any) => ({
-    ...c,
-    studentIds: (c.students || []).map((s: any) => s.toString()),
-    courseIds: (c.courses || []).map((co: any) => co.toString()),
-    createdByName: c.createdByName || (c.createdBy ? `${c.createdBy.firstName} ${c.createdBy.lastName}` : 'System'),
-  }));
+      return dtoClassrooms.map((c: any) => ({
+        ...c,
+        studentIds: (c.students || []).map((s: any) => s.toString()),
+        courseIds: (c.courses || []).map((co: any) => co.toString()),
+        createdByName: c.createdByName || (c.createdBy ? `${c.createdBy.firstName} ${c.createdBy.lastName}` : 'System'),
+      }));
+    }
+  }, {});
 }
 
 /**
  * Get a single classroom detail with fully resolved students & courses for editing.
  */
 export async function getClassroomDetail(id: string) {
-  await dbConnect();
-  const classroom = await ClassroomModel.findById(id)
-    .populate('students', 'firstName lastName email')
-    .populate('courses', 'title code')
-    .populate('createdBy', 'firstName lastName')
-    .lean();
+  return createAction({
+    name: 'getClassroomDetail',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    inputSchema: z.object({ id: z.string().length(24) }),
+    handler: async ({ id }, { user: session }) => {
+      const classroom = await ClassroomModel.findOne({ _id: id, institutionId: session!.institutionId })
+        .populate('students', 'firstName lastName email')
+        .populate('courses', 'title code')
+        .populate('createdBy', 'firstName lastName')
+        .lean();
 
-  if (!classroom) return null;
+      if (!classroom) throw new Error('Classroom not found or unauthorized');
 
-  const dto = toDTO<any>(classroom);
+      const dto = toDTO<any>(classroom);
 
-  return {
-    ...dto,
-    studentIds: (dto.students || []).map((s: any) => (s.id || s).toString()),
-    courseIds: (dto.courses || []).map((c: any) => (c.id || c).toString()),
-    populatedStudents: (dto.students || []).map((s: any) => ({ ...s, id: (s.id || s).toString() })),
-    populatedCourses: (dto.courses || []).map((c: any) => ({ ...c, id: (c.id || c).toString() })),
-    createdByName: dto.createdBy ? `${dto.createdBy.firstName} ${dto.createdBy.lastName}` : 'System',
-  };
+      return {
+        ...dto,
+        studentIds: (dto.students || []).map((s: any) => (s.id || s).toString()),
+        courseIds: (dto.courses || []).map((c: any) => (c.id || c).toString()),
+        populatedStudents: (dto.students || []).map((s: any) => ({ ...s, id: (s.id || s).toString() })),
+        populatedCourses: (dto.courses || []).map((c: any) => ({ ...c, id: (c.id || c).toString() })),
+        createdByName: dto.createdBy ? `${dto.createdBy.firstName} ${dto.createdBy.lastName}` : 'System',
+      };
+    }
+  }, { id });
 }
 
 /**
@@ -74,184 +79,154 @@ export async function getClassroomDetail(id: string) {
  * - Both administrators and teachers can assign courses.
  */
 export async function saveClassroom(data: any) {
-  try {
-    const session = await getSessionAction();
-    if (!session || (session.role !== 'administrator' && session.role !== 'teacher')) {
-      return { error: 'Unauthorized: Only administrators and teachers can manage classrooms.' };
-    }
+  return createAction({
+    name: 'saveClassroom',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (rawInput, { user: session }) => {
+      const { id, studentIds, courseIds, ...rest } = rawInput;
 
-    await dbConnect();
-    const { id, studentIds, courseIds, ...rest } = data;
+      const classroomData: any = {
+        ...rest,
+        students: studentIds || [],
+        courses: courseIds || [],
+        institutionId: session!.institutionId
+      };
 
-    const classroomData: any = {
-      ...rest,
-      students: studentIds || [],
-      courses: courseIds || [],
-    };
+      if (id) {
+        const existing = await ClassroomModel.findOne({ _id: id, institutionId: session!.institutionId }).lean();
+        if (!existing) throw new Error('Classroom not found or unauthorized');
 
-    if (id) {
-      // Update existing
-      const existing = await ClassroomModel.findById(id).lean();
-      if (!existing) return { error: 'Classroom not found.' };
-
-      // Teachers can only update students and courses, not name/description
-      if (session.role === 'teacher') {
-        await ClassroomModel.findByIdAndUpdate(id, {
-          students: classroomData.students,
-          courses: classroomData.courses,
-        });
+        if (session!.role === USER_ROLES.TEACHER) {
+          await ClassroomModel.findByIdAndUpdate(id, {
+            students: classroomData.students,
+            courses: classroomData.courses,
+          });
+        } else {
+          await ClassroomModel.findByIdAndUpdate(id, classroomData);
+        }
       } else {
-        await ClassroomModel.findByIdAndUpdate(id, classroomData);
+        if (session!.role !== USER_ROLES.ADMINISTRATOR && session!.role !== USER_ROLES.SUPERADMIN) {
+          throw new Error('Unauthorized to create classrooms.');
+        }
+        classroomData.createdBy = session!.id;
+        await ClassroomModel.create(classroomData);
       }
-    } else {
-      // Create new — admin only
-      if (session.role !== 'administrator') {
-        return { error: 'Only administrators can create new classrooms.' };
-      }
-      classroomData.createdBy = session.id;
-      await ClassroomModel.create(classroomData);
-    }
 
-    revalidatePath('/admin/classrooms');
-    revalidatePath('/dashboard');
-    return { success: true };
-  } catch (error: any) {
-    console.error('Error saving classroom:', error);
-    return { error: error.message };
-  }
+      revalidatePath('/admin/classrooms');
+      revalidatePath('/dashboard');
+      return { success: true };
+    }
+  }, data);
 }
 
-/**
- * Delete a classroom — admin only.
- */
 export async function deleteClassroom(id: string) {
-  try {
-    const session = await getSessionAction();
-    if (!session || session.role !== 'administrator') {
-      return { error: 'Only administrators can delete classrooms.' };
+  return createAction({
+    name: 'deleteClassroom',
+    allowedRoles: [USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    inputSchema: z.object({ id: z.string().length(24) }),
+    handler: async ({ id }, { user: session }) => {
+      const deleted = await ClassroomModel.findOneAndDelete({ _id: id, institutionId: session!.institutionId });
+      if (!deleted) throw new Error('Classroom not found or unauthorized');
+      revalidatePath('/admin/classrooms');
+      return { success: true };
     }
-
-    await dbConnect();
-    await ClassroomModel.findByIdAndDelete(id);
-    revalidatePath('/admin/classrooms');
-    return { success: true };
-  } catch (error: any) {
-    console.error('Error deleting classroom:', error);
-    return { error: error.message };
-  }
+  }, { id });
 }
 
 /**
  * Returns courses filtered by the student's classroom assignment.
  */
 export async function getStudentAccessibleCourses(studentId: string) {
-  await dbConnect();
-  // 1. Find the classroom(s) this student belongs to
-  const classrooms = await ClassroomModel.find({ students: studentId }).lean();
+  return createAction({
+    name: 'getStudentAccessibleCourses',
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async ({ studentId }, { user: session }) => {
+      const targetId = session!.role === USER_ROLES.STUDENT ? session!.id : studentId;
+      const classrooms = await ClassroomModel.find({ students: targetId, institutionId: session!.institutionId }).lean();
 
-  if (!classrooms || classrooms.length === 0) {
-    return []; // No classroom, no courses (Strict security as per requirement)
-  }
+      if (!classrooms || classrooms.length === 0) return [];
 
-  // 2. Collect all course IDs from these classrooms
-  const courseIds = classrooms.reduce((acc: string[], curr: any) => {
-    return [...acc, ...(curr.courses || []).map((id: any) => id.toString())];
-  }, []);
+      const courseIds = classrooms.reduce((acc: string[], curr: any) => {
+        return [...acc, ...(curr.courses || []).map((id: any) => id.toString())];
+      }, []);
 
-  // 3. Fetch these courses
-  const courses = await CourseModel.find({
-    _id: { $in: courseIds },
-    isPublished: true
-  }).lean();
+      const courses = await CourseModel.find({
+        _id: { $in: courseIds },
+        institutionId: session!.institutionId,
+        isPublished: true
+      }).lean();
 
-  return JSON.parse(JSON.stringify(courses)).map((c: any) => ({
-    ...c,
-    id: c._id.toString()
-  }));
+      return toDTO<any>(courses);
+    }
+  }, { studentId });
 }
 
-/**
- * Get classrooms a student belongs to — for the student's classroom view.
- */
 export async function getStudentClassrooms(studentId: string) {
-  await dbConnect();
-  const classrooms = await ClassroomModel.find({ students: studentId })
-    .populate('courses', 'title code isPublished thumbnail description')
-    .populate('createdBy', 'firstName lastName')
-    .lean();
+  return createAction({
+    name: 'getStudentClassrooms',
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async ({ studentId }, { user: session }) => {
+      const targetId = session!.role === USER_ROLES.STUDENT ? session!.id : studentId;
+      const classrooms = await ClassroomModel.find({ students: targetId, institutionId: session!.institutionId })
+        .populate('courses', 'title code isPublished thumbnail description')
+        .populate('createdBy', 'firstName lastName')
+        .lean();
 
-  return JSON.parse(JSON.stringify(classrooms)).map((c: any) => ({
-    ...c,
-    id: c._id.toString(),
-    courseCount: (c.courses || []).length,
-    studentCount: (c.students || []).length,
-    createdByName: c.createdBy ? `${c.createdBy.firstName} ${c.createdBy.lastName}` : 'System',
-    populatedCourses: (c.courses || []).map((co: any) => ({ ...co, id: (co._id || co).toString() })),
-  }));
+      return toDTO<any>(classrooms).map((c: any) => ({
+        ...c,
+        courseCount: (c.courses || []).length,
+        studentCount: (c.students || []).length,
+        createdByName: c.createdBy ? `${c.createdBy.firstName} ${c.createdBy.lastName}` : 'System',
+        populatedCourses: (c.courses || []).map((co: any) => ({ ...co, id: (co._id || co).toString() })),
+      }));
+    }
+  }, { studentId });
 }
 
-/**
- * Add a single student to a classroom — teacher action.
- */
 export async function addStudentToClassroom(classroomId: string, studentId: string) {
-  try {
-    const session = await getSessionAction();
-    if (!session || (session.role !== 'administrator' && session.role !== 'teacher')) {
-      return { error: 'Unauthorized' };
+  return createAction({
+    name: 'addStudentToClassroom',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async ({ classroomId, studentId }, { user: session }) => {
+      const updated = await ClassroomModel.findOneAndUpdate(
+        { _id: classroomId, institutionId: session!.institutionId },
+        { $addToSet: { students: studentId } }
+      );
+      if (!updated) throw new Error('Classroom not found or unauthorized');
+      revalidatePath('/admin/classrooms');
+      return { success: true };
     }
-
-    await dbConnect();
-    await ClassroomModel.findByIdAndUpdate(classroomId, {
-      $addToSet: { students: studentId }
-    });
-
-    revalidatePath('/admin/classrooms');
-    return { success: true };
-  } catch (error: any) {
-    return { error: error.message };
-  }
+  }, { classroomId, studentId });
 }
 
-/**
- * Remove a single student from a classroom.
- */
 export async function removeStudentFromClassroom(classroomId: string, studentId: string) {
-  try {
-    const session = await getSessionAction();
-    if (!session || (session.role !== 'administrator' && session.role !== 'teacher')) {
-      return { error: 'Unauthorized' };
+  return createAction({
+    name: 'removeStudentFromClassroom',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async ({ classroomId, studentId }, { user: session }) => {
+      const updated = await ClassroomModel.findOneAndUpdate(
+        { _id: classroomId, institutionId: session!.institutionId },
+        { $pull: { students: studentId } }
+      );
+      if (!updated) throw new Error('Classroom not found or unauthorized');
+      revalidatePath('/admin/classrooms');
+      return { success: true };
     }
-
-    await dbConnect();
-    await ClassroomModel.findByIdAndUpdate(classroomId, {
-      $pull: { students: studentId }
-    });
-
-    revalidatePath('/admin/classrooms');
-    return { success: true };
-  } catch (error: any) {
-    return { error: error.message };
-  }
+  }, { classroomId, studentId });
 }
 
-/**
- * Assign courses to a classroom — both admin and teacher.
- */
 export async function assignCoursesToClassroom(classroomId: string, courseIds: string[]) {
-  try {
-    const session = await getSessionAction();
-    if (!session || (session.role !== 'administrator' && session.role !== 'teacher')) {
-      return { error: 'Unauthorized' };
+  return createAction({
+    name: 'assignCoursesToClassroom',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async ({ classroomId, courseIds }, { user: session }) => {
+      const updated = await ClassroomModel.findOneAndUpdate(
+        { _id: classroomId, institutionId: session!.institutionId },
+        { courses: courseIds }
+      );
+      if (!updated) throw new Error('Classroom not found or unauthorized');
+      revalidatePath('/admin/classrooms');
+      return { success: true };
     }
-
-    await dbConnect();
-    await ClassroomModel.findByIdAndUpdate(classroomId, {
-      courses: courseIds
-    });
-
-    revalidatePath('/admin/classrooms');
-    return { success: true };
-  } catch (error: any) {
-    return { error: error.message };
-  }
+  }, { classroomId, courseIds });
 }

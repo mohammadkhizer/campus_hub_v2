@@ -10,6 +10,15 @@ const UserSchema = new mongoose.Schema({
   contactNumber: { type: String },
   passwordVersion: { type: Number, default: 0 },
   authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
+  failedLoginAttempts: { type: Number, default: 0 },
+  lockoutUntil: { type: Date },
+  hasConsentedToDataCollection: { type: Boolean, default: false },
+  institutionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institution' }, // For Multi-tenancy
+  deletedAt: { type: Date, default: null }, // For Soft Deletes
 }, { timestamps: true });
+
+// Compound Indexes for common patterns
+UserSchema.index({ email: 1, institutionId: 1 }, { unique: true });
+UserSchema.index({ role: 1, institutionId: 1 });
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);

@@ -4,315 +4,292 @@ import dbConnect from '@/lib/mongoose';
 import QuizModel from '@/models/Quiz';
 import AttemptModel from '@/models/Attempt';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { getSessionAction } from '@/app/actions/auth';
 import CourseModel from '@/models/Course';
 import { toDTO } from '@/lib/dto';
 import { notifyStudentsInCourse } from './courses';
+import { createAction } from '@/lib/action-factory';
+import { USER_ROLES } from '@/lib/constants';
+import { z } from 'zod';
 
-export async function serverGetQuizzes(adminId?: string) {
-  try {
-    const session = await getSessionAction();
-    await dbConnect();
-    
-    let query = adminId ? { adminId } : { isPublished: true };
-    const quizzes = await QuizModel.find(query).sort({ createdAt: -1 }).lean();
-    
-    return quizzes.map((q: any) => {
-      const dto = toDTO<any>(q);
-      const isStudent = session?.role === 'student';
+export async function serverGetQuizzes() {
+  return createAction({
+    name: 'serverGetQuizzes',
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (_, { user: session }) => {
+      let query: any = { institutionId: session!.institutionId };
       
+      if (session!.role === USER_ROLES.STUDENT) {
+        query.isPublished = true;
+      } else if (session!.role === USER_ROLES.TEACHER) {
+        // Teachers see published and unpublished quizzes for their institution
+      }
+
+      const quizzes = await QuizModel.find(query).sort({ createdAt: -1 }).lean();
+      
+      return quizzes.map((q: any) => {
+        const dto = toDTO<any>(q);
+        const isStudent = session!.role === USER_ROLES.STUDENT;
+        
+        return {
+          ...dto,
+          questions: (dto.questions || []).map((question: any) => ({
+            ...question,
+            correctAnswer: isStudent ? undefined : question.correctAnswer,
+            explanation: isStudent ? undefined : question.explanation,
+          }))
+        };
+      });
+    }
+  }, {});
+}
+
+export async function serverGetQuiz(id: string) {
+  return createAction({
+    name: 'serverGetQuiz',
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    inputSchema: z.object({ id: z.string().length(24) }),
+    handler: async ({ id }, { user: session }) => {
+      const quiz = await QuizModel.findOne({ _id: id, institutionId: session!.institutionId }).lean();
+      if (!quiz) throw new Error('Quiz not found or unauthorized');
+      
+      const dto = toDTO<any>(quiz);
+      const isStudent = session!.role === USER_ROLES.STUDENT;
+
       return {
         ...dto,
         questions: (dto.questions || []).map((question: any) => ({
           ...question,
-          // Hide sensitive fields from students
           correctAnswer: isStudent ? undefined : question.correctAnswer,
           explanation: isStudent ? undefined : question.explanation,
         }))
       };
-    });
-  } catch (error) {
-    console.error('Error fetching quizzes:', error);
-    return [];
-  }
-}
-
-export async function serverGetQuiz(id: string) {
-  try {
-    const session = await getSessionAction();
-    await dbConnect();
-    
-    const quiz = await QuizModel.findById(id).lean();
-    if (!quiz) return null;
-    
-    const dto = toDTO<any>(quiz);
-    const isStudent = session?.role === 'student';
-
-    return {
-      ...dto,
-      questions: (dto.questions || []).map((question: any) => ({
-        ...question,
-        // Hide sensitive fields from students
-        correctAnswer: isStudent ? undefined : question.correctAnswer,
-        explanation: isStudent ? undefined : question.explanation,
-      }))
-    };
-  } catch (error) {
-    console.error('Error fetching quiz:', error);
-    return null;
-  }
+    }
+  }, { id });
 }
 
 export async function serverSaveQuiz(quiz: any) {
-  try {
-    const session = await getSessionAction();
-    if (!session || (session.role !== 'administrator' && session.role !== 'teacher')) {
-      return { success: false, error: "Unauthorized" };
-    }
+  return createAction({
+    name: 'serverSaveQuiz',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (rawInput, { user: session }) => {
+      const rl = await checkRateLimit({ limit: 10, windowMs: 60 * 1000 });
+      if (!rl.success) throw new Error(`Rate limit exceeded. Wait ${rl.reset}s.`);
 
-    // Check Rate Limit (e.g., 5 saves per minute)
-    const rl = await checkRateLimit({ limit: 5, windowMs: 60 * 1000 });
-    if (!rl.success) {
-      return { success: false, error: `Rate limit exceeded. Please try again in ${rl.reset} seconds.` };
-    }
-
-    await dbConnect();
-
-    // Verify course access for teachers
-    if (session.role === 'teacher' && quiz.courseId) {
-      const course = await CourseModel.findById(quiz.courseId).lean();
-      if (!course || course.faculty?.toString() !== session.id) {
-        return { success: false, error: "You are not authorized to save quizzes for this course." };
+      // Verify course access
+      if (session!.role === USER_ROLES.TEACHER && rawInput.courseId) {
+        const course = await CourseModel.findOne({ _id: rawInput.courseId, institutionId: session!.institutionId }).lean();
+        if (!course || course.faculty?.toString() !== session!.id) {
+          throw new Error("Unauthorized access to this course.");
+        }
       }
-    }
-    
-    // Proper senior-level data mapping to match Mongoose Schema
-    const cleanedQuestions = (quiz.questions || []).map((q: any) => ({
-      type: q.type || 'mcq',
-      questionText: q.questionText,
-      options: q.answerChoices || q.options || [],
-      correctAnswer: q.correctAnswer,
-      explanation: q.explanation || '',
-      points: q.points || 1
-    }));
 
-    const cleanData = {
-      course: quiz.courseId,
-      title: quiz.title,
-      description: quiz.description,
-      difficulty: quiz.difficulty || 'medium',
-      timeLimit: Number(quiz.timeLimitMinutes) || 0,
-      isPublished: quiz.published === undefined ? true : !!quiz.published,
-      activityMonitoring: quiz.activityMonitoring === undefined ? true : !!quiz.activityMonitoring,
-      password: quiz.password || '',
-      questions: cleanedQuestions,
-      generationType: quiz.generationType || 'manual'
-    };
+      const cleanedQuestions = (rawInput.questions || []).map((q: any) => ({
+        type: q.type || 'mcq',
+        questionText: q.questionText,
+        options: q.answerChoices || q.options || [],
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation || '',
+        points: q.points || 1
+      }));
 
-    if (quiz.id && quiz.id.length === 24) { 
-      await QuizModel.findByIdAndUpdate(quiz.id, cleanData, { new: true });
-    } else {
-      await QuizModel.create(cleanData);
-      // Background notification only for new quizzes
-      if (cleanData.isPublished) {
-        notifyStudentsInCourse(cleanData.course, 'Quiz', cleanData.title, cleanData.description);
+      const cleanData = {
+        course: rawInput.courseId,
+        institutionId: session!.institutionId,
+        title: rawInput.title,
+        description: rawInput.description,
+        difficulty: rawInput.difficulty || 'medium',
+        timeLimit: Number(rawInput.timeLimitMinutes) || 0,
+        isPublished: rawInput.published === undefined ? true : !!rawInput.published,
+        activityMonitoring: rawInput.activityMonitoring === undefined ? true : !!rawInput.activityMonitoring,
+        password: rawInput.password || '',
+        questions: cleanedQuestions,
+        generationType: rawInput.generationType || 'manual'
+      };
+
+      if (rawInput.id && rawInput.id.length === 24) { 
+        await QuizModel.findOneAndUpdate({ _id: rawInput.id, institutionId: session!.institutionId }, cleanData);
+      } else {
+        await QuizModel.create(cleanData);
+        if (cleanData.isPublished) {
+          notifyStudentsInCourse(cleanData.course, 'Quiz', cleanData.title, cleanData.description);
+        }
       }
+      return { success: true };
     }
-    
-    return { success: true };
-  } catch (error: any) {
-    console.error('Error saving quiz:', error);
-    throw error;
-  }
+  }, quiz);
 }
 
 export async function serverDeleteQuiz(id: string) {
-  try {
-    await dbConnect();
-    await QuizModel.findByIdAndDelete(id);
-    return { success: true };
-  } catch (error) {
-    console.error('Error deleting quiz:', error);
-    throw error;
-  }
+  return createAction({
+    name: 'serverDeleteQuiz',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    inputSchema: z.object({ id: z.string().length(24) }),
+    handler: async ({ id }, { user: session }) => {
+      const deleted = await QuizModel.findOneAndDelete({ _id: id, institutionId: session!.institutionId });
+      if (!deleted) throw new Error('Quiz not found or unauthorized');
+      return { success: true };
+    }
+  }, { id });
 }
 
 export async function serverSaveAttempt(attemptData: any) {
-  try {
-    const session = await getSessionAction();
-    if (!session) return { success: false, error: "Authentication required" };
+  return createAction({
+    name: 'serverSaveAttempt',
+    allowedRoles: [USER_ROLES.STUDENT],
+    handler: async (rawInput, { user: session }) => {
+      const rl = await checkRateLimit({ limit: 10, windowMs: 60 * 1000 });
+      if (!rl.success) throw new Error(`Too many submissions. Wait ${rl.reset}s.`);
 
-    await dbConnect();
-    
-    // 1. Verify Attempt Ownership
-    if (session.role === 'student' && attemptData.studentId !== session.id) {
-      return { success: false, error: "Security Violation: Cannot submit on behalf of another user." };
-    }
+      const quiz = await QuizModel.findOne({ _id: rawInput.quizId, institutionId: session!.institutionId }).lean();
+      if (!quiz) throw new Error("Quiz not found or unauthorized.");
 
-    // 2. Fetch the actual quiz to calculate the score (DO NOT TRUST CLIENT SCORE)
-    const quiz = await QuizModel.findById(attemptData.quizId).lean();
-    if (!quiz) return { success: false, error: "Quiz not found" };
+      let serverCalculatedScore = 0;
+      const clientAnswers = rawInput.answers || {};
 
-    // 3. Re-calculate score on the server
-    let serverCalculatedScore = 0;
-    const clientAnswers = attemptData.answers || {};
-
-    quiz.questions.forEach((q: any) => {
-      const qId = q._id.toString();
-      const userAnswer = (clientAnswers[qId] || "").trim().toLowerCase();
-      const correctAnswer = (q.correctAnswer || "").trim().toLowerCase();
-
-      if (q.type === 'mcq' || q.type === 'fill-in-the-blanks') {
-        if (userAnswer === correctAnswer) {
+      quiz.questions.forEach((q: any) => {
+        const qId = q._id.toString();
+        const userAnswer = (clientAnswers[qId] || "").trim().toLowerCase();
+        const correctAnswer = (q.correctAnswer || "").trim().toLowerCase();
+        if (['mcq', 'fill-in-the-blanks'].includes(q.type) && userAnswer === correctAnswer) {
           serverCalculatedScore += (q.points || 1);
         }
-      }
-      // For short/long answers, we keep status as 'pending' if needed, 
-      // but for now, we follow existing logic.
-    });
+      });
 
-    // 4. Create the attempt record with server-side data
-    const attempt = await AttemptModel.create({
-      quiz: attemptData.quizId,
-      student: attemptData.studentId,
-      score: serverCalculatedScore,
-      totalQuestions: quiz.questions.length,
-      answers: clientAnswers,
-      status: attemptData.status || 'completed',
-      completedAt: new Date()
-    });
+      const attempt = await AttemptModel.create({
+        quiz: rawInput.quizId,
+        student: session!.id,
+        institutionId: session!.institutionId,
+        score: serverCalculatedScore,
+        totalQuestions: quiz.questions.length,
+        answers: clientAnswers,
+        status: 'completed',
+        completedAt: new Date()
+      });
 
-    return { 
-      success: true, 
-      id: attempt._id.toString(),
-      score: serverCalculatedScore 
-    };
-  } catch (error) {
-    console.error('Error saving attempt:', error);
-    return { success: false, error: "Failed to save attempt securely" };
-  }
+      return { id: attempt._id.toString(), score: serverCalculatedScore };
+    }
+  }, attemptData);
 }
 
 export async function serverGetAttempts(studentId: string) {
-  try {
-    await dbConnect();
-    const attempts = await AttemptModel.find({ student: studentId })
+  return createAction({
+    name: 'serverGetAttempts',
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async ({ studentId }, { user: session }) => {
+      // Students can only see their own attempts
+      const targetId = session!.role === USER_ROLES.STUDENT ? session!.id : studentId;
+      
+      const attempts = await AttemptModel.find({ 
+        student: targetId, 
+        institutionId: session!.institutionId 
+      })
       .populate('student', 'firstName lastName email enrollmentNumber')
       .populate('quiz', 'title')
       .sort({ completedAt: -1 })
       .lean();
-    return toDTO<any>(attempts).map((a: any) => ({
-      ...a,
-      studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
-      studentEmail: a.student?.email || 'N/A',
-      studentEnrollment: a.student?.enrollmentNumber || 'N/A',
-      quizTitle: a.quiz?.title || 'Unknown Quiz',
-      attemptedCount: a.answers ? Object.keys(a.answers).length : 0
-    }));
-  } catch (error) {
-    console.error('Error fetching attempts:', error);
-    return [];
-  }
+
+      return toDTO<any>(attempts).map((a: any) => ({
+        ...a,
+        studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
+        studentEmail: a.student?.email || 'N/A',
+        studentEnrollment: a.student?.enrollmentNumber || 'N/A',
+        quizTitle: a.quiz?.title || 'Unknown Quiz',
+        attemptedCount: a.answers ? Object.keys(a.answers).length : 0
+      }));
+    }
+  }, { studentId });
 }
 
 export async function serverGetAllAttempts() {
-  try {
-    await dbConnect();
-    const attempts = await AttemptModel.find({})
-      .populate('student', 'firstName lastName email enrollmentNumber')
-      .populate('quiz', 'title')
-      .sort({ completedAt: -1 })
-      .lean();
-    return toDTO<any>(attempts).map((a: any) => ({
-      ...a,
-      studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
-      studentEmail: a.student?.email || 'N/A',
-      studentEnrollment: a.student?.enrollmentNumber || 'N/A',
-      quizTitle: a.quiz?.title || 'Unknown Quiz',
-      attemptedCount: a.answers ? Object.keys(a.answers).length : 0
-    }));
-  } catch (error) {
-    console.error('Error fetching all attempts:', error);
-    return [];
-  }
+  return createAction({
+    name: 'serverGetAllAttempts',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (_, { user: session }) => {
+      const attempts = await AttemptModel.find({ institutionId: session!.institutionId })
+        .populate('student', 'firstName lastName email enrollmentNumber')
+        .populate('quiz', 'title')
+        .sort({ completedAt: -1 })
+        .lean();
+
+      return toDTO<any>(attempts).map((a: any) => ({
+        ...a,
+        studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
+        studentEmail: a.student?.email || 'N/A',
+        studentEnrollment: a.student?.enrollmentNumber || 'N/A',
+        quizTitle: a.quiz?.title || 'Unknown Quiz',
+        attemptedCount: a.answers ? Object.keys(a.answers).length : 0
+      }));
+    }
+  }, {});
 }
 
 export async function serverGetQuizAttempts(quizId: string) {
-  try {
-    await dbConnect();
-    const attempts = await AttemptModel.find({ quiz: quizId })
-      .populate('student', 'firstName lastName email enrollmentNumber')
-      .sort({ score: -1, completedAt: 1 })
-      .lean();
-      
-    const dtoAttempts = toDTO<any[]>(attempts);
-
-    return dtoAttempts.map((a: any) => ({
-      ...a,
-      studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
-      studentEmail: a.student?.email || 'N/A',
-      studentEnrollment: a.student?.enrollmentNumber || 'N/A',
-      attemptedCount: a.answers ? Object.keys(a.answers).length : 0
-    }));
-  } catch (error) {
-    console.error('Error fetching quiz attempts:', error);
-    return [];
-  }
+  return createAction({
+    name: 'serverGetQuizAttempts',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async ({ quizId }, { user: session }) => {
+      const attempts = await AttemptModel.find({ quiz: quizId, institutionId: session!.institutionId })
+        .populate('student', 'firstName lastName email enrollmentNumber')
+        .sort({ score: -1, completedAt: 1 })
+        .lean();
+        
+      return toDTO<any[]>(attempts).map((a: any) => ({
+        ...a,
+        studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown',
+        studentEmail: a.student?.email || 'N/A',
+        studentEnrollment: a.student?.enrollmentNumber || 'N/A',
+        attemptedCount: a.answers ? Object.keys(a.answers).length : 0
+      }));
+    }
+  }, { quizId });
 }
 
 export async function serverDeleteAttempt(attemptId: string) {
-  try {
-    const session = await getSessionAction();
-    if (!session || (session.role !== 'administrator' && session.role !== 'teacher')) {
-      return { success: false, error: "Unauthorized" };
+  return createAction({
+    name: 'serverDeleteAttempt',
+    allowedRoles: [USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async ({ attemptId }, { user: session }) => {
+      const deleted = await AttemptModel.findOneAndDelete({ _id: attemptId, institutionId: session!.institutionId });
+      if (!deleted) throw new Error('Attempt not found or unauthorized');
+      return { success: true };
     }
-    await dbConnect();
-    await AttemptModel.findByIdAndDelete(attemptId);
-    return { success: true };
-  } catch (error) {
-    console.error('Error deleting attempt:', error);
-    return { success: false, error: "Failed to delete attempt" };
-  }
+  }, { attemptId });
 }
 
 export async function serverGradeAttempt(attemptId: string, score: number, feedback: string) {
-  try {
-    const session = await getSessionAction();
-    if (!session || (session.role !== 'teacher' && session.role !== 'administrator')) {
-      return { success: false, error: "Unauthorized" };
+  return createAction({
+    name: 'serverGradeAttempt',
+    allowedRoles: [USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (validatedData, { user: session }) => {
+      const updated = await AttemptModel.findOneAndUpdate(
+        { _id: validatedData.attemptId, institutionId: session!.institutionId },
+        { score: validatedData.score, feedback: validatedData.feedback, status: 'completed' },
+        { new: true }
+      );
+      if (!updated) throw new Error('Attempt not found or unauthorized');
+      return { success: true };
     }
-
-    await dbConnect();
-    await AttemptModel.findByIdAndUpdate(attemptId, { 
-      score, 
-      feedback, 
-      status: 'completed' 
-    });
-    return { success: true };
-  } catch (e: any) {
-    console.error('Error grading attempt:', e);
-    return { success: false, error: e.message };
-  }
+  }, { attemptId, score, feedback });
 }
 
 export async function serverGetAttempt(attemptId: string) {
-  try {
-    await dbConnect();
-    const attempt = await AttemptModel.findById(attemptId)
-      .populate('student', 'firstName lastName email enrollmentNumber')
-      .lean();
-    
-    if (!attempt) return null;
+  return createAction({
+    name: 'serverGetAttempt',
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async ({ attemptId }, { user: session }) => {
+      const attempt = await AttemptModel.findOne({ _id: attemptId, institutionId: session!.institutionId })
+        .populate('student', 'firstName lastName email enrollmentNumber')
+        .lean();
+      
+      if (!attempt) throw new Error('Attempt not found or unauthorized');
 
-    const data = toDTO<any>(attempt);
-    return {
-      ...data,
-      studentName: data.student ? `${data.student.firstName} ${data.student.lastName}` : 'Unknown',
-      studentEmail: data.student?.email || 'N/A',
-      studentEnrollment: data.student?.enrollmentNumber || 'N/A'
-    };
-  } catch (error) {
-    console.error('Error fetching attempt:', error);
-    return null;
-  }
+      const data = toDTO<any>(attempt);
+      return {
+        ...data,
+        studentName: data.student ? `${data.student.firstName} ${data.student.lastName}` : 'Unknown',
+        studentEmail: data.student?.email || 'N/A',
+        studentEnrollment: data.student?.enrollmentNumber || 'N/A'
+      };
+    }
+  }, { attemptId });
 }

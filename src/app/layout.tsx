@@ -13,6 +13,9 @@ export const metadata: Metadata = {
 
 import { Footer } from "@/components/footer";
 
+import { CookieConsent } from '@/components/CookieConsent';
+import { GlobalErrorBoundary } from '@/components/GlobalErrorBoundary';
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -34,15 +37,18 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-body antialiased bg-background min-h-screen">
-        <AuthProvider initialProfile={session}>
-          <div className="flex flex-col min-h-screen">
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
-          </div>
-          <Toaster />
-        </AuthProvider>
+        <GlobalErrorBoundary>
+          <AuthProvider initialProfile={session}>
+            <div className="flex flex-col min-h-screen">
+              <main className="flex-grow">
+                {children}
+              </main>
+              <Footer />
+            </div>
+            <Toaster />
+            <CookieConsent />
+          </AuthProvider>
+        </GlobalErrorBoundary>
       </body>
     </html>
   );

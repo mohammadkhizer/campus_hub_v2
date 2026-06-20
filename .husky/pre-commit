@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run secret scanning if gitleaks is installed
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "🛡️ Scanning for leaked secrets..."
+  gitleaks protect -v --staged
+  if [ $? -ne 0 ]; then
+    echo "❌ Secrets detected by GitLeaks! Commit blocked."
+    exit 1
+  fi
+else
+  echo "⚠️ gitleaks not installed. Please install it to enable secret scanning."
+fi
+
+# Run lint-staged (which handles Prettier and ESLint for staged files)
+echo "🧹 Running lint-staged..."
+npx lint-staged
+
+# Run typecheck
+echo "🔎 Running typecheck..."
+npm run typecheck

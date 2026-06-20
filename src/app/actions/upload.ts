@@ -17,12 +17,24 @@ export async function uploadFileToCloudinary(formData: FormData) {
       return { success: false, error: 'No file provided' };
     }
 
+    // Validate file size (max 5MB)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      return { success: false, error: 'File size exceeds 5MB limit' };
+    }
+
+    // Validate MIME type
+    const mimeType = file.type || 'application/octet-stream';
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(mimeType)) {
+      return { success: false, error: 'Invalid file type. Only JPEG, PNG, WebP, and PDF are allowed.' };
+    }
+
     // Read the file data
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
     // Convert to Base64 data URI
-    const mimeType = file.type || 'application/octet-stream';
     const base64Data = buffer.toString('base64');
     const fileUri = `data:${mimeType};base64,${base64Data}`;
 

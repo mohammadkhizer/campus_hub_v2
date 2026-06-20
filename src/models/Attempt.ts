@@ -8,7 +8,14 @@ const AttemptSchema = new mongoose.Schema({
   completedAt: { type: Date, required: true },
   status: { type: String, enum: ['completed', 'disqualified', 'pending_review'], default: 'completed' },
   answers: { type: Map, of: String },
-  feedback: { type: String }
-});
+  feedback: { type: String },
+  institutionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institution' },
+  deletedAt: { type: Date, default: null },
+}, { timestamps: true });
+
+// Enforce one attempt per student per quiz
+AttemptSchema.index({ quiz: 1, student: 1 }, { unique: true });
+AttemptSchema.index({ quiz: 1, institutionId: 1 });
+AttemptSchema.index({ student: 1, institutionId: 1 });
 
 export default mongoose.models.Attempt || mongoose.model('Attempt', AttemptSchema);

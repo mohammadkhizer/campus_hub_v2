@@ -1,4 +1,15 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
+import { tenantPlugin } from '@/lib/mongoose-tenant-plugin';
+
+export interface ISubmission extends Document {
+  assignment: mongoose.Types.ObjectId;
+  student: mongoose.Types.ObjectId;
+  fileUrl: string;
+  status: 'pending' | 'approved' | 'rejected' | 'graded';
+  grade?: string;
+  feedback?: string;
+  institutionId: string;
+}
 
 const SubmissionSchema = new mongoose.Schema({
   assignment: { type: mongoose.Schema.Types.ObjectId, ref: 'Assignment', required: true },
@@ -9,4 +20,6 @@ const SubmissionSchema = new mongoose.Schema({
   feedback: { type: String },
 }, { timestamps: true });
 
-export default mongoose.models.Submission || mongoose.model('Submission', SubmissionSchema);
+SubmissionSchema.plugin(tenantPlugin);
+
+export default mongoose.models.Submission || mongoose.model<ISubmission>('Submission', SubmissionSchema);

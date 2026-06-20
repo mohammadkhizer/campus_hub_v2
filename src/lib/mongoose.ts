@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 import { env } from './env';
 import { logger } from './logger';
+import { tenantPlugin } from './mongoose-tenant-plugin';
+
+// Register global plugins
+mongoose.plugin(tenantPlugin);
 
 const MONGODB_URI = env.MONGODB_URI;
 const MONGODB_BACKUP_URI = env.MONGODB_BACKUP_URI;
@@ -22,14 +26,27 @@ async function dbConnect() {
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: false,
       serverSelectionTimeoutMS: 5000, 
       socketTimeoutMS: 10000,
       family: 4, // Force IPv4 to avoid potential DNS issues
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      minPoolSize: 2, // Keep at least 2 open sockets
+      heartbeatFrequencyMS: 10000,
+    };
+
+    const connectWithRetry = async (uri: string, retries = 5, delay = 1000): Promise<typeof mongoose> => {
+      try {
+        return await mongoose.connect(uri, opts);
+      } catch (err: any) {
+        if (retries === 0) throw err;
+        logger.warn(`DB Connection failed. Retrying in ${delay}ms... (${retries} left)`);
+        await new Promise(res => setTimeout(res, delay));
+        return connectWithRetry(uri, retries - 1, delay * 2); // Exponential backoff
+      }
     };
 
     logger.info('DB: Creating new connection promise');
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((m) => {
+    cached.promise = connectWithRetry(MONGODB_URI).then((m) => {
       logger.info('✅ DB: Connected to Primary');
       cached.isBackup = false;
       return m;
@@ -39,7 +56,7 @@ async function dbConnect() {
       if (MONGODB_BACKUP_URI) {
         logger.warn('⚠️ DB: Trying Backup...');
         try {
-          const backupConn = await mongoose.connect(MONGODB_BACKUP_URI, opts);
+          const backupConn = await connectWithRetry(MONGODB_BACKUP_URI, 3, 1000);
           logger.security('🚨 DB: FAILOVER SUCCESSFUL');
           cached.isBackup = true;
           return backupConn;

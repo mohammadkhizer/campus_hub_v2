@@ -8,20 +8,42 @@ interface LogEntry {
   level: LogLevel;
   message: string;
   timestamp: string;
+  requestId?: string;
   context?: Record<string, any>;
 }
 
 class Logger {
-  private format(level: LogLevel, message: string, context?: Record<string, any>): LogEntry {
+  maskSensitiveData(context?: Record<string, any>): Record<string, any> | undefined {
+    if (!context) return context;
+    const sensitiveKeys = ['password', 'token', 'secret', 'email', 'contactNumber', 'enrollmentNumber'];
+    const masked = { ...context };
+    
+    const maskString = (str: string) => {
+      if (str.length <= 4) return '****';
+      return `${str.substring(0, 2)}****${str.substring(str.length - 2)}`;
+    };
+
+    for (const key of Object.keys(masked)) {
+      if (sensitiveKeys.some(k => key.toLowerCase().includes(k)) && typeof masked[key] === 'string') {
+        masked[key] = maskString(masked[key]);
+      } else if (typeof masked[key] === 'object' && masked[key] !== null) {
+        masked[key] = this.maskSensitiveData(masked[key]); // Recursive masking
+      }
+    }
+    return masked;
+  }
+
+  format(level: LogLevel, message: string, context?: Record<string, any>): LogEntry {
     return {
       level,
       message,
       timestamp: new Date().toISOString(),
-      context,
+      requestId: context?.correlationId || context?.requestId,
+      context: this.maskSensitiveData(context),
     };
   }
 
-  private async log(entry: LogEntry) {
+  async log(entry: LogEntry) {
     const output = JSON.stringify(entry);
     if (entry.level === 'error' || entry.level === 'security') {
       console.error(output);
@@ -42,6 +64,7 @@ class Logger {
         await SystemLog.create({
           level: entry.level,
           message: entry.message,
+          requestId: entry.requestId,
           context: entry.context,
           timestamp: new Date(entry.timestamp)
         });

@@ -2,9 +2,12 @@
 
 import dbConnect from '@/lib/mongoose';
 import ComplaintModel from '@/models/Complaint';
-import { getSessionAction } from '@/app/actions/auth';
 import { revalidatePath } from 'next/cache';
+import { createAction } from '@/lib/action-factory';
+import { USER_ROLES } from '@/lib/constants';
+import { toDTO } from '@/lib/dto';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 const ComplaintSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters"),
@@ -20,131 +23,121 @@ const ComplaintSchema = z.object({
 });
 
 export async function submitComplaintAction(data: any) {
-  try {
-    const session = await getSessionAction();
-    if (!session || session.role !== 'student') {
-      return { success: false, error: "Only students can register complaints." };
-    }
+  return createAction({
+    name: 'submitComplaintAction',
+    allowedRoles: [USER_ROLES.STUDENT],
+    inputSchema: ComplaintSchema,
+    handler: async (validatedData, { user: session }) => {
+      // Anonymity logic
+      const shouldBeAnonymous = validatedData.category === 'anti-ragging' || validatedData.isAnonymous;
+      
+      const complaint = await ComplaintModel.create({
+        ...validatedData,
+        student: session!.id,
+        institutionId: session!.institutionId,
+        studentName: shouldBeAnonymous ? "ANONYMOUS STUDENT" : `${session!.firstName} ${session!.lastName}`,
+        isAnonymous: shouldBeAnonymous,
+        status: 'pending'
+      });
 
-    const validated = ComplaintSchema.safeParse(data);
-    if (!validated.success) {
-      return { success: false, error: validated.error.errors[0].message };
-    }
-
-    await dbConnect();
-    
-    // Anonymity logic: Mask name for anti-ragging if requested
-    const shouldBeAnonymous = validated.data.category === 'anti-ragging' || validated.data.isAnonymous;
-    
-    const complaint = await ComplaintModel.create({
-      ...validated.data,
-      student: session.id,
-      studentName: shouldBeAnonymous ? "ANONYMOUS STUDENT" : `${session.firstName} ${session.lastName}`,
-      isAnonymous: shouldBeAnonymous,
-      status: 'pending'
-    });
-
-    // ── COMMITTEE NOTIFICATIONS ──
-    const isUrgent = ['grievance', 'anti-ragging'].includes(validated.data.category) || validated.data.severity === 'critical';
-    if (isUrgent) {
-      try {
-        const { sendEmail } = await import('@/lib/mail-service');
-        const committeeEmail = process.env.COMMITTEE_EMAIL || 'committee@campushub.edu';
-        
-        await sendEmail({
-          to: committeeEmail,
-          subject: `URGENT: ${validated.data.category.toUpperCase()} - ${validated.data.subject}`,
-          html: `
-            <div style="font-family: sans-serif; border: 2px solid #dc2626; border-radius: 12px; overflow: hidden;">
-              <div style="background-color: #dc2626; padding: 20px; color: white;">
-                <h1 style="margin: 0;">Urgent Complaint Reported</h1>
-              </div>
-              <div style="padding: 24px;">
-                <p><strong>Category:</strong> ${validated.data.category}</p>
-                <p><strong>Severity:</strong> <span style="color: #dc2626; font-weight: bold;">${validated.data.severity.toUpperCase()}</span></p>
-                <p><strong>From:</strong> ${session.firstName} ${session.lastName} (${session.id})</p>
-                <hr />
-                <h3>Subject: ${validated.data.subject}</h3>
-                <p>${validated.data.description}</p>
-                ${validated.data.evidence?.length ? `<p><em>${validated.data.evidence.length} evidence file(s) attached.</em></p>` : ''}
-                <div style="margin-top: 30px;">
-                  <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/complaints" style="background: #111827; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">
-                    Review Complaint Now
-                  </a>
+      // Committee notifications for urgent categories
+      const isUrgent = ['grievance', 'anti-ragging'].includes(validatedData.category) || validatedData.severity === 'critical';
+      if (isUrgent) {
+        try {
+          const { sendEmail } = await import('@/lib/mail-service');
+          const committeeEmail = process.env.COMMITTEE_EMAIL || 'committee@campushub.edu';
+          
+          await sendEmail({
+            to: committeeEmail,
+            subject: `URGENT: ${validatedData.category.toUpperCase()} - ${validatedData.subject}`,
+            html: `
+              <div style="font-family: sans-serif; border: 2px solid #dc2626; border-radius: 12px; overflow: hidden;">
+                <div style="background-color: #dc2626; padding: 20px; color: white;">
+                  <h1 style="margin: 0;">Urgent Complaint Reported</h1>
+                </div>
+                <div style="padding: 24px;">
+                  <p><strong>Category:</strong> ${validatedData.category}</p>
+                  <p><strong>Severity:</strong> <span style="color: #dc2626; font-weight: bold;">${validatedData.severity.toUpperCase()}</span></p>
+                  <p><strong>Institution:</strong> ${session!.institutionId}</p>
+                  <hr />
+                  <h3>Subject: ${validatedData.subject}</h3>
+                  <p>${validatedData.description}</p>
+                  <div style="margin-top: 30px;">
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/complaints" style="background: #111827; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">
+                      Review Complaint Now
+                    </a>
+                  </div>
                 </div>
               </div>
-            </div>
-          `
-        });
-      } catch (err) {
-        console.error('Failed to notify committee:', err);
+            `
+          });
+        } catch (err) {
+          logger.error('Failed to notify committee', { error: err });
+        }
       }
-    }
 
-    revalidatePath('/student/complaints');
-    return { success: true, id: complaint._id.toString() };
-  } catch (error: any) {
-    console.error('Complaint submission error:', error);
-    return { success: false, error: "Failed to register complaint. Please try again." };
-  }
+      revalidatePath('/student/complaints');
+      return { success: true, id: (complaint as any)._id.toString() };
+    }
+  }, data);
 }
 
 export async function getStudentComplaintsAction() {
-  try {
-    const session = await getSessionAction();
-    if (!session) return [];
-
-    await dbConnect();
-    const complaints = await ComplaintModel.find({ student: session.id }).sort({ createdAt: -1 }).lean();
-    return JSON.parse(JSON.stringify(complaints)).map((c: any) => ({
-      ...c,
-      id: c._id.toString()
-    }));
-  } catch (error) {
-    console.error('Error fetching student complaints:', error);
-    return [];
-  }
+  return createAction({
+    name: 'getStudentComplaintsAction',
+    allowedRoles: [USER_ROLES.STUDENT],
+    handler: async (_, { user: session }) => {
+      const complaints = await ComplaintModel.find({ 
+        student: session!.id, 
+        institutionId: session!.institutionId 
+      }).sort({ createdAt: -1 }).lean();
+      return toDTO<any>(complaints);
+    }
+  }, {});
 }
 
 export async function getAllComplaintsAction() {
-  try {
-    const session = await getSessionAction();
-    if (!session || !['administrator', 'superadmin'].includes(session.role)) {
-      return [];
+  return createAction({
+    name: 'getAllComplaintsAction',
+    allowedRoles: [USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (_, { user: session }) => {
+      const complaints = await ComplaintModel.find({ 
+        institutionId: session!.institutionId 
+      }).sort({ createdAt: -1 }).lean();
+      return toDTO<any>(complaints);
     }
-
-    await dbConnect();
-    const complaints = await ComplaintModel.find({}).sort({ createdAt: -1 }).lean();
-    return JSON.parse(JSON.stringify(complaints)).map((c: any) => ({
-      ...c,
-      id: c._id.toString()
-    }));
-  } catch (error) {
-    console.error('Error fetching all complaints:', error);
-    return [];
-  }
+  }, {});
 }
 
-export async function updateComplaintStatusAction(complaintId: string, status: string, response?: string) {
-  try {
-    const session = await getSessionAction();
-    if (!session || !['administrator', 'superadmin'].includes(session.role)) {
-      return { success: false, error: "Unauthorized" };
+export async function updateComplaintStatusAction(
+  complaintId: string, 
+  status: 'pending' | 'in-progress' | 'resolved' | 'rejected', 
+  response?: string
+) {
+  return createAction({
+    name: 'updateComplaintStatusAction',
+    allowedRoles: [USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    inputSchema: z.object({
+      complaintId: z.string().length(24),
+      status: z.enum(['pending', 'in-progress', 'resolved', 'rejected']),
+      response: z.string().optional()
+    }),
+    handler: async (validatedData, { user: admin }) => {
+      const updated = await ComplaintModel.findOneAndUpdate(
+        { _id: validatedData.complaintId, institutionId: admin!.institutionId },
+        {
+          status: validatedData.status,
+          response: validatedData.response,
+          resolvedBy: admin!.id,
+          resolvedAt: validatedData.status === 'resolved' ? new Date() : undefined
+        }
+      );
+
+      if (!updated) throw new Error('Complaint not found or unauthorized');
+
+      revalidatePath('/admin/complaints');
+      revalidatePath('/student/complaints');
+      return { success: true };
     }
-
-    await dbConnect();
-    await ComplaintModel.findByIdAndUpdate(complaintId, {
-      status,
-      response,
-      resolvedBy: session.id,
-      resolvedAt: status === 'resolved' ? new Date() : undefined
-    });
-
-    revalidatePath('/admin/complaints');
-    revalidatePath('/student/complaints');
-    return { success: true };
-  } catch (error) {
-    console.error('Error updating complaint status:', error);
-    return { success: false, error: "Update failed" };
-  }
+  }, { complaintId, status, response });
 }

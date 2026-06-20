@@ -22,9 +22,10 @@ const ComplaintSchema = new mongoose.Schema({
   description: { type: String, required: true },
   status: { 
     type: String, 
-    enum: ['pending', 'in-review', 'resolved', 'rejected'],
+    enum: ['pending', 'in-progress', 'resolved', 'rejected'],
     default: 'pending' 
   },
+  institutionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institution', required: true },
   response: { type: String },
   resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   resolvedAt: { type: Date },

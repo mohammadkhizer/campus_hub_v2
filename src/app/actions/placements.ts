@@ -5,214 +5,202 @@ import dbConnect from '@/lib/mongoose';
 import PlacementProfile from '@/models/PlacementProfile';
 import PlacementDrive from '@/models/PlacementDrive';
 import PlacementApplication from '@/models/PlacementApplication';
-import { getSessionAction as getSession } from '@/app/actions/auth';
+import { createAction } from '@/lib/action-factory';
+import { USER_ROLES } from '@/lib/constants';
 import { z } from 'zod';
+import { toDTO } from '@/lib/dto';
 
 // ── STUDENT ACTIONS ──
 
 export async function getPlacementProfileAction() {
-  try {
-    const session = await getSession();
-    if (!session) throw new Error('Unauthorized');
+  return createAction({
+    name: 'getPlacementProfileAction',
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (_, { user: session }) => {
+      let profile = await PlacementProfile.findOne({ 
+        student: session!.id, 
+        institutionId: session!.institutionId 
+      }).lean();
+      
+      if (!profile) {
+        profile = await PlacementProfile.create({ 
+          student: session!.id, 
+          institutionId: session!.institutionId 
+        });
+      }
 
-    await dbConnect();
-    let profile = await PlacementProfile.findOne({ student: session.id });
-    
-    if (!profile) {
-      profile = await PlacementProfile.create({ student: session.id });
+      return toDTO<any>(profile);
     }
-
-    return JSON.parse(JSON.stringify(profile));
-  } catch (error: any) {
-    console.error('Error fetching placement profile:', error);
-    return null;
-  }
+  }, {});
 }
 
 export async function updatePlacementProfileAction(data: any) {
-  try {
-    const session = await getSession();
-    if (!session) throw new Error('Unauthorized');
+  return createAction({
+    name: 'updatePlacementProfileAction',
+    allowedRoles: [USER_ROLES.STUDENT],
+    handler: async (rawInput, { user: session }) => {
+      const updateData = { ...rawInput };
+      // Security: If student updates academics, reset verification status
+      if (rawInput.academicMetrics || rawInput.personalDetails) {
+        updateData['academicMetrics.isVerified'] = false;
+      }
 
-    await dbConnect();
-    // Security: If student updates academics, reset verification status
-    const updateData = { ...data };
-    if (data.academicMetrics || data.personalDetails) {
-      updateData['academicMetrics.isVerified'] = false;
+      const profile = await PlacementProfile.findOneAndUpdate(
+        { student: session!.id, institutionId: session!.institutionId },
+        { $set: updateData },
+        { new: true, upsert: true }
+      ).lean();
+
+      revalidatePath('/student/placements');
+      return { profile: toDTO<any>(profile) };
     }
-
-    const profile = await PlacementProfile.findOneAndUpdate(
-      { student: session.id },
-      { $set: updateData },
-      { new: true, upsert: true }
-    );
-
-    revalidatePath('/student/placements');
-    return { success: true, profile: JSON.parse(JSON.stringify(profile)) };
-  } catch (error: any) {
-    console.error('Error updating placement profile:', error);
-    return { success: false, error: error.message };
-  }
+  }, data);
 }
 
 export async function getEligibleDrivesAction() {
-  try {
-    const session = await getSession();
-    if (!session) throw new Error('Unauthorized');
+  return createAction({
+    name: 'getEligibleDrivesAction',
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (_, { user: session }) => {
+      const profile = await PlacementProfile.findOne({ student: session!.id, institutionId: session!.institutionId }).lean();
+      if (!profile) return [];
 
-    await dbConnect();
-    const profile = await PlacementProfile.findOne({ student: session.id });
-    if (!profile) return [];
-
-    // Basic eligibility check logic
-    const drives = await PlacementDrive.find({ status: 'active' });
-    
-    const eligibleDrives = drives.map(drive => {
-      const driveObj = drive.toObject();
-      const isEligible = (
-        profile.academicMetrics.currentCGPA >= drive.eligibility.minCGPA &&
-        profile.academicMetrics.activeBacklogs <= drive.eligibility.maxActiveBacklogs &&
-        profile.personalDetails.tenthPercentage >= drive.eligibility.minTenthPercentage &&
-        profile.personalDetails.twelfthPercentage >= drive.eligibility.minTwelfthPercentage
-      );
+      const drives = await PlacementDrive.find({ status: 'active', institutionId: session!.institutionId }).lean();
       
-      return {
-        ...JSON.parse(JSON.stringify(driveObj)),
-        isEligible,
-        reasons: isEligible ? [] : [
-          profile.academicMetrics.currentCGPA < drive.eligibility.minCGPA ? 'Low CGPA' : null,
-          profile.academicMetrics.activeBacklogs > drive.eligibility.maxActiveBacklogs ? 'Active Backlogs' : null,
-          profile.personalDetails.tenthPercentage < drive.eligibility.minTenthPercentage ? 'Low 10th Marks' : null,
-          profile.personalDetails.twelfthPercentage < drive.eligibility.minTwelfthPercentage ? 'Low 12th Marks' : null,
-        ].filter(Boolean)
-      };
-    });
-
-    return eligibleDrives;
-  } catch (error) {
-    console.error('Error fetching eligible drives:', error);
-    return [];
-  }
+      return drives.map(drive => {
+        const isEligible = (
+          (profile.academicMetrics?.currentCGPA || 0) >= (drive.eligibility?.minCGPA || 0) &&
+          (profile.academicMetrics?.activeBacklogs || 0) <= (drive.eligibility?.maxActiveBacklogs || 0) &&
+          (profile.personalDetails?.tenthPercentage || 0) >= (drive.eligibility?.minTenthPercentage || 0) &&
+          (profile.personalDetails?.twelfthPercentage || 0) >= (drive.eligibility?.minTwelfthPercentage || 0)
+        );
+        
+        return {
+          ...toDTO<any>(drive),
+          isEligible,
+          reasons: isEligible ? [] : [
+            (profile.academicMetrics?.currentCGPA || 0) < (drive.eligibility?.minCGPA || 0) ? 'Low CGPA' : null,
+            (profile.academicMetrics?.activeBacklogs || 0) > (drive.eligibility?.maxActiveBacklogs || 0) ? 'Active Backlogs' : null,
+            (profile.personalDetails?.tenthPercentage || 0) < (drive.eligibility?.minTenthPercentage || 0) ? 'Low 10th Marks' : null,
+            (profile.personalDetails?.twelfthPercentage || 0) < (drive.eligibility?.minTwelfthPercentage || 0) ? 'Low 12th Marks' : null,
+          ].filter(Boolean)
+        };
+      });
+    }
+  }, {});
 }
 
 export async function applyToDriveAction(driveId: string) {
-  try {
-    const session = await getSession();
-    if (!session) throw new Error('Unauthorized');
+  return createAction({
+    name: 'applyToDriveAction',
+    allowedRoles: [USER_ROLES.STUDENT],
+    inputSchema: z.object({ driveId: z.string().length(24) }),
+    handler: async ({ driveId }, { user: session }) => {
+      const drive = await PlacementDrive.findOne({ _id: driveId, institutionId: session!.institutionId }).lean();
+      if (!drive) throw new Error('Drive not found or unauthorized');
 
-    await dbConnect();
-    const drive = await PlacementDrive.findById(driveId);
-    if (!drive) throw new Error('Drive not found');
+      const profile = await PlacementProfile.findOne({ student: session!.id, institutionId: session!.institutionId }).lean();
+      if (!profile) throw new Error('Placement profile not found');
 
-    const profile = await PlacementProfile.findOne({ student: session.id });
-    if (!profile) throw new Error('Placement profile not found');
+      const existing = await PlacementApplication.findOne({ student: session!.id, drive: driveId });
+      if (existing) throw new Error('You have already applied for this recruitment drive.');
 
-    // Prevent duplicate applications
-    const existing = await PlacementApplication.findOne({ student: session.id, drive: driveId });
-    if (existing) throw new Error('You have already applied for this recruitment drive.');
+      const isEligible = (
+        (profile.academicMetrics?.currentCGPA || 0) >= (drive.eligibility?.minCGPA || 0) &&
+        (profile.academicMetrics?.activeBacklogs || 0) <= (drive.eligibility?.maxActiveBacklogs || 0) &&
+        (profile.personalDetails?.tenthPercentage || 0) >= (drive.eligibility?.minTenthPercentage || 0) &&
+        (profile.personalDetails?.twelfthPercentage || 0) >= (drive.eligibility?.minTwelfthPercentage || 0)
+      );
 
-    // Re-verify eligibility on server (Full check)
-    const isEligible = (
-      profile.academicMetrics.currentCGPA >= drive.eligibility.minCGPA &&
-      profile.academicMetrics.activeBacklogs <= drive.eligibility.maxActiveBacklogs &&
-      profile.personalDetails.tenthPercentage >= drive.eligibility.minTenthPercentage &&
-      profile.personalDetails.twelfthPercentage >= drive.eligibility.minTwelfthPercentage
-    );
+      if (!isEligible) throw new Error('You do not meet the full eligibility criteria.');
 
-    if (!isEligible) throw new Error('You do not meet the full eligibility criteria for this drive.');
+      const application = await PlacementApplication.create({
+        student: session!.id,
+        drive: driveId,
+        institutionId: session!.institutionId,
+        status: 'applied'
+      });
 
-    const application = await PlacementApplication.create({
-      student: session.id,
-      drive: driveId,
-      status: 'applied'
-    });
-
-    revalidatePath('/student/placements');
-    return { success: true, application: JSON.parse(JSON.stringify(application)) };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
+      revalidatePath('/student/placements');
+      return { application: toDTO<any>(application) };
+    }
+  }, { driveId });
 }
 
 // ── ADMIN / TPO ACTIONS ──
 
 export async function createPlacementDriveAction(data: any) {
-  try {
-    const session = await getSession();
-    if (!session || (session.role !== 'administrator' && session.role !== 'superadmin')) {
-      throw new Error('Unauthorized');
+  return createAction({
+    name: 'createPlacementDriveAction',
+    allowedRoles: [USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (rawInput, { user: session }) => {
+      if (new Date(rawInput.deadline) > new Date(rawInput.driveDate)) {
+        throw new Error('Application deadline must be on or before the drive date.');
+      }
+
+      const drive = await PlacementDrive.create({
+        ...rawInput,
+        institutionId: session!.institutionId
+      });
+      
+      revalidatePath('/admin/placements');
+      return { drive: toDTO<any>(drive) };
     }
-
-    await dbConnect();
-
-    // Validation: Deadline must be before Drive Date
-    if (new Date(data.deadline) > new Date(data.driveDate)) {
-      throw new Error('Application deadline must be on or before the drive date.');
-    }
-
-    const drive = await PlacementDrive.create(data);
-    
-    revalidatePath('/admin/placements');
-    return { success: true, drive: JSON.parse(JSON.stringify(drive)) };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
+  }, data);
 }
 
 export async function getAllApplicationsAction(driveId: string) {
-  try {
-    const session = await getSession();
-    if (!session || (session.role !== 'administrator' && session.role !== 'superadmin')) {
-      throw new Error('Unauthorized');
-    }
-
-    await dbConnect();
-    const applications = await PlacementApplication.find({ drive: driveId })
+  return createAction({
+    name: 'getAllApplicationsAction',
+    allowedRoles: [USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    inputSchema: z.object({ driveId: z.string().length(24) }),
+    handler: async ({ driveId }, { user: session }) => {
+      const applications = await PlacementApplication.find({ 
+        drive: driveId, 
+        institutionId: session!.institutionId 
+      })
       .populate({
         path: 'student',
         select: 'firstName lastName email enrollmentNumber'
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
-    return JSON.parse(JSON.stringify(applications));
-  } catch (error) {
-    console.error('Error fetching applications:', error);
-    return [];
-  }
+      return toDTO<any>(applications);
+    }
+  }, { driveId });
 }
 
 export async function updateApplicationStatusAction(applicationId: string, status: string) {
-  try {
-    const session = await getSession();
-    if (!session || (session.role !== 'administrator' && session.role !== 'superadmin')) {
-      throw new Error('Unauthorized');
+  return createAction({
+    name: 'updateApplicationStatusAction',
+    allowedRoles: [USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    inputSchema: z.object({ applicationId: z.string().length(24), status: z.string() }),
+    handler: async ({ applicationId, status }, { user: session }) => {
+      const updated = await PlacementApplication.findOneAndUpdate(
+        { _id: applicationId, institutionId: session!.institutionId },
+        { status }
+      );
+      if (!updated) throw new Error('Application not found or unauthorized');
+      revalidatePath('/admin/placements');
+      return { success: true };
     }
-
-    await dbConnect();
-    await PlacementApplication.findByIdAndUpdate(applicationId, { status });
-    revalidatePath('/admin/placements');
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
+  }, { applicationId, status });
 }
 
 export async function verifyStudentAcademicsAction(studentId: string, isVerified: boolean) {
-  try {
-    const session = await getSession();
-    if (!session || (session.role !== 'administrator' && session.role !== 'superadmin')) {
-      throw new Error('Unauthorized');
+  return createAction({
+    name: 'verifyStudentAcademicsAction',
+    allowedRoles: [USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    inputSchema: z.object({ studentId: z.string().length(24), isVerified: z.boolean() }),
+    handler: async ({ studentId, isVerified }, { user: session }) => {
+      const updated = await PlacementProfile.findOneAndUpdate(
+        { student: studentId, institutionId: session!.institutionId },
+        { $set: { 'academicMetrics.isVerified': isVerified } }
+      );
+      if (!updated) throw new Error('Profile not found or unauthorized');
+      revalidatePath('/admin/placements');
+      return { success: true };
     }
-
-    await dbConnect();
-    await PlacementProfile.findOneAndUpdate(
-      { student: studentId },
-      { $set: { 'academicMetrics.isVerified': isVerified } }
-    );
-    
-    revalidatePath('/admin/placements');
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
+  }, { studentId, isVerified });
 }

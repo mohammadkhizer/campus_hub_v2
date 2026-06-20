@@ -1,0 +1,21 @@
+version: "2"
+plugins:
+  eslint:
+    enabled: true
+    channel: "eslint-8"
+  sonar-javascript:
+    enabled: true
+  duplication:
+    enabled: true
+    config:
+      languages:
+        - javascript
+        - typescript
+exclude_patterns:
+  - "node_modules/"
+  - ".next/"
+  - "dist/"
+  - "build/"
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "docs/"

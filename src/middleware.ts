@@ -1,10 +1,23 @@
+import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { checkRateLimit } from './lib/rate-limit';
 
-export async function middleware(request: NextRequest) {
-  // 1. Apply Security Headers
+export default auth(async (req) => {
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
+  
+  const protectedRoutes = ['/admin', '/superadmin', '/teacher', '/student', '/profile', '/api/actions'];
+  const isProtected = protectedRoutes.some(route => nextUrl.pathname.startsWith(route));
+
+  // 0. Auth Protection
+  if (isProtected && !isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', nextUrl));
+  }
+
   const response = NextResponse.next();
+
+  // 1. Apply Security Headers
   
   // Content Security Policy (CSP) - Basic hardened version
   // Adjust this based on your external scripts/styles needs
@@ -31,23 +44,19 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
   // 2. Global Rate Limiting for API and Actions
-  if (request.nextUrl.pathname.startsWith('/api') || request.headers.get('next-action')) {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
-               (request as any).ip || 
-               'anonymous';
-    const rateLimit = await checkRateLimit({ limit: 50, windowMs: 60 * 1000 }, ip); // 50 req/min
+  if (nextUrl.pathname.startsWith('/api') || req.headers.get('next-action')) {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 'anonymous';
+    const rateLimit = await checkRateLimit({ limit: 50, windowMs: 60 * 1000 }, ip);
     if (!rateLimit.success) {
       return new NextResponse('Too Many Requests', { 
         status: 429,
-        headers: {
-          'Retry-After': rateLimit.reset.toString(),
-        }
+        headers: { 'Retry-After': rateLimit.reset.toString() }
       });
     }
   }
 
   return response;
-}
+});
 
 export const config = {
   matcher: [
