@@ -8,6 +8,9 @@ import { getSessionAction } from '@/app/actions/auth';
 import CourseModel from '@/models/Course';
 import { toDTO } from '@/lib/dto';
 import { notifyStudentsInCourse } from './courses';
+import { createAction } from '@/lib/action-factory';
+import { USER_ROLES } from '@/lib/constants';
+import { z } from 'zod';
 
 export async function serverGetQuizzes(adminId?: string) {
   try {
@@ -71,7 +74,7 @@ export async function serverSaveQuiz(quiz: any) {
     }
 
     // Check Rate Limit (e.g., 5 saves per minute)
-    const rl = await checkRateLimit({ limit: 5, windowMs: 60 * 1000 });
+    const rl = await checkRateLimit({ limit: 5, windowMs: 60 * 1000 }, 'quiz-save');
     if (!rl.success) {
       return { success: false, error: `Rate limit exceeded. Please try again in ${rl.reset} seconds.` };
     }
@@ -137,60 +140,62 @@ export async function serverDeleteQuiz(id: string) {
   }
 }
 
+
 export async function serverSaveAttempt(attemptData: any) {
-  try {
-    const session = await getSessionAction();
-    if (!session) return { success: false, error: "Authentication required" };
-
-    await dbConnect();
-    
-    // 1. Verify Attempt Ownership
-    if (session.role === 'student' && attemptData.studentId !== session.id) {
-      return { success: false, error: "Security Violation: Cannot submit on behalf of another user." };
-    }
-
-    // 2. Fetch the actual quiz to calculate the score (DO NOT TRUST CLIENT SCORE)
-    const quiz = await QuizModel.findById(attemptData.quizId).lean();
-    if (!quiz) return { success: false, error: "Quiz not found" };
-
-    // 3. Re-calculate score on the server
-    let serverCalculatedScore = 0;
-    const clientAnswers = attemptData.answers || {};
-
-    quiz.questions.forEach((q: any) => {
-      const qId = q._id.toString();
-      const userAnswer = (clientAnswers[qId] || "").trim().toLowerCase();
-      const correctAnswer = (q.correctAnswer || "").trim().toLowerCase();
-
-      if (q.type === 'mcq' || q.type === 'fill-in-the-blanks') {
-        if (userAnswer === correctAnswer) {
-          serverCalculatedScore += (q.points || 1);
-        }
+  return createAction({
+    name: 'serverSaveAttempt',
+    allowedRoles: [USER_ROLES.STUDENT],
+    inputSchema: z.object({
+      quizId: z.string(),
+      studentId: z.string(),
+      answers: z.record(z.string()),
+      status: z.string().optional(),
+      requestId: z.string().optional(),
+    }),
+    handler: async (validatedData, { user: session }) => {
+      // 1. Verify Attempt Ownership
+      if (validatedData.studentId !== session!.id) {
+        throw new Error("Security Violation: Cannot submit on behalf of another user.");
       }
-      // For short/long answers, we keep status as 'pending' if needed, 
-      // but for now, we follow existing logic.
-    });
 
-    // 4. Create the attempt record with server-side data
-    const attempt = await AttemptModel.create({
-      quiz: attemptData.quizId,
-      student: attemptData.studentId,
-      score: serverCalculatedScore,
-      totalQuestions: quiz.questions.length,
-      answers: clientAnswers,
-      status: attemptData.status || 'completed',
-      completedAt: new Date()
-    });
+      // 2. Fetch the actual quiz to calculate the score (DO NOT TRUST CLIENT SCORE)
+      const quiz = await QuizModel.findById(validatedData.quizId).lean();
+      if (!quiz) throw new Error("Quiz not found");
 
-    return { 
-      success: true, 
-      id: attempt._id.toString(),
-      score: serverCalculatedScore 
-    };
-  } catch (error) {
-    console.error('Error saving attempt:', error);
-    return { success: false, error: "Failed to save attempt securely" };
-  }
+      // 3. Re-calculate score on the server
+      let serverCalculatedScore = 0;
+      const clientAnswers = validatedData.answers || {};
+
+      quiz.questions.forEach((q: any) => {
+        const qId = q._id.toString();
+        const userAnswer = (clientAnswers[qId] || "").trim().toLowerCase();
+        const correctAnswer = (q.correctAnswer || "").trim().toLowerCase();
+
+        if (q.type === 'mcq' || q.type === 'fill-in-the-blanks') {
+          if (userAnswer === correctAnswer) {
+            serverCalculatedScore += (q.points || 1);
+          }
+        }
+      });
+
+      // 4. Create the attempt record with server-side data
+      const attempt = await AttemptModel.create({
+        quiz: validatedData.quizId,
+        student: validatedData.studentId,
+        score: serverCalculatedScore,
+        totalQuestions: quiz.questions.length,
+        answers: clientAnswers,
+        status: validatedData.status || 'completed',
+        completedAt: new Date()
+      });
+
+      return { 
+        success: true, 
+        id: attempt._id.toString(),
+        score: serverCalculatedScore 
+      };
+    }
+  }, attemptData);
 }
 
 export async function serverGetAttempts(studentId: string) {

@@ -110,6 +110,7 @@ function TakeQuizContent({ id }: { id: string }) {
           completedAt: new Date().toISOString(),
           status: 'disqualified',
           answers: answers,
+          requestId: crypto.randomUUID(),
         };
         saveAttempt(profile?.id || 'unknown', disqualifiedAttempt);
       }
@@ -312,6 +313,7 @@ function TakeQuizContent({ id }: { id: string }) {
         completedAt: new Date().toISOString(),
         status: 'completed',
         answers,
+        requestId: crypto.randomUUID(),
       };
 
       try {

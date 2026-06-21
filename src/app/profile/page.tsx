@@ -148,6 +148,7 @@ export default function ProfilePage() {
       email: form.email.trim(),
       enrollmentNumber: form.enrollmentNumber.trim(),
       contactNumber: form.contactNumber.trim(),
+      requestId: crypto.randomUUID(),
     });
     if (result.success) {
       toast({ title: 'Profile Updated!', description: 'Your profile details have been saved.' });
@@ -175,6 +176,7 @@ export default function ProfilePage() {
       contactNumber: form.contactNumber,
       currentPassword: passwordForm.currentPassword,
       newPassword: passwordForm.newPassword,
+      requestId: crypto.randomUUID(),
     });
     if (result.success) {
       toast({ title: 'Password Changed!', description: 'Your password has been updated successfully.' });

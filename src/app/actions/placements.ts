@@ -8,6 +8,9 @@ import PlacementApplication from '@/models/PlacementApplication';
 import { getSessionAction as getSession } from '@/app/actions/auth';
 import { z } from 'zod';
 
+import { createAction } from '@/lib/action-factory';
+import { USER_ROLES } from '@/lib/constants';
+
 // ── STUDENT ACTIONS ──
 
 export async function getPlacementProfileAction() {
@@ -30,29 +33,27 @@ export async function getPlacementProfileAction() {
 }
 
 export async function updatePlacementProfileAction(data: any) {
-  try {
-    const session = await getSession();
-    if (!session) throw new Error('Unauthorized');
+  return createAction({
+    name: 'updatePlacementProfileAction',
+    allowedRoles: [USER_ROLES.STUDENT],
+    handler: async (validatedData) => {
+      // Security: If student updates academics, reset verification status
+      const updateData = { ...validatedData };
+      if (validatedData.academicMetrics || validatedData.personalDetails) {
+        updateData['academicMetrics.isVerified'] = false;
+      }
 
-    await dbConnect();
-    // Security: If student updates academics, reset verification status
-    const updateData = { ...data };
-    if (data.academicMetrics || data.personalDetails) {
-      updateData['academicMetrics.isVerified'] = false;
+      const session = await getSession(); // Handler context has session but let's be explicit if needed
+      const profile = await PlacementProfile.findOneAndUpdate(
+        { student: session!.id },
+        { $set: updateData },
+        { new: true, upsert: true }
+      );
+
+      revalidatePath('/student/placements');
+      return { profile: JSON.parse(JSON.stringify(profile)) };
     }
-
-    const profile = await PlacementProfile.findOneAndUpdate(
-      { student: session.id },
-      { $set: updateData },
-      { new: true, upsert: true }
-    );
-
-    revalidatePath('/student/placements');
-    return { success: true, profile: JSON.parse(JSON.stringify(profile)) };
-  } catch (error: any) {
-    console.error('Error updating placement profile:', error);
-    return { success: false, error: error.message };
-  }
+  }, data);
 }
 
 export async function getEligibleDrivesAction() {
@@ -95,43 +96,45 @@ export async function getEligibleDrivesAction() {
   }
 }
 
-export async function applyToDriveAction(driveId: string) {
-  try {
-    const session = await getSession();
-    if (!session) throw new Error('Unauthorized');
+export async function applyToDriveAction(data: { driveId: string, requestId?: string }) {
+  return createAction({
+    name: 'applyToDriveAction',
+    inputSchema: z.object({
+      driveId: z.string(),
+      requestId: z.string().optional(),
+    }),
+    allowedRoles: [USER_ROLES.STUDENT],
+    handler: async ({ driveId }, { user: session }) => {
+      const drive = await PlacementDrive.findById(driveId);
+      if (!drive) throw new Error('Drive not found');
 
-    await dbConnect();
-    const drive = await PlacementDrive.findById(driveId);
-    if (!drive) throw new Error('Drive not found');
+      const profile = await PlacementProfile.findOne({ student: session!.id });
+      if (!profile) throw new Error('Placement profile not found');
 
-    const profile = await PlacementProfile.findOne({ student: session.id });
-    if (!profile) throw new Error('Placement profile not found');
+      // Prevent duplicate applications
+      const existing = await PlacementApplication.findOne({ student: session!.id, drive: driveId });
+      if (existing) throw new Error('You have already applied for this recruitment drive.');
 
-    // Prevent duplicate applications
-    const existing = await PlacementApplication.findOne({ student: session.id, drive: driveId });
-    if (existing) throw new Error('You have already applied for this recruitment drive.');
+      // Re-verify eligibility on server (Full check)
+      const isEligible = (
+        profile.academicMetrics.currentCGPA >= drive.eligibility.minCGPA &&
+        profile.academicMetrics.activeBacklogs <= drive.eligibility.maxActiveBacklogs &&
+        profile.personalDetails.tenthPercentage >= drive.eligibility.minTenthPercentage &&
+        profile.personalDetails.twelfthPercentage >= drive.eligibility.minTwelfthPercentage
+      );
 
-    // Re-verify eligibility on server (Full check)
-    const isEligible = (
-      profile.academicMetrics.currentCGPA >= drive.eligibility.minCGPA &&
-      profile.academicMetrics.activeBacklogs <= drive.eligibility.maxActiveBacklogs &&
-      profile.personalDetails.tenthPercentage >= drive.eligibility.minTenthPercentage &&
-      profile.personalDetails.twelfthPercentage >= drive.eligibility.minTwelfthPercentage
-    );
+      if (!isEligible) throw new Error('You do not meet the full eligibility criteria for this drive.');
 
-    if (!isEligible) throw new Error('You do not meet the full eligibility criteria for this drive.');
+      const application = await PlacementApplication.create({
+        student: session!.id,
+        drive: driveId,
+        status: 'applied'
+      });
 
-    const application = await PlacementApplication.create({
-      student: session.id,
-      drive: driveId,
-      status: 'applied'
-    });
-
-    revalidatePath('/student/placements');
-    return { success: true, application: JSON.parse(JSON.stringify(application)) };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
+      revalidatePath('/student/placements');
+      return { application: JSON.parse(JSON.stringify(application)) };
+    }
+  }, data);
 }
 
 // ── ADMIN / TPO ACTIONS ──

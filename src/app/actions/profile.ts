@@ -4,6 +4,8 @@ import dbConnect from '@/lib/mongoose';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { getSessionAction } from '@/app/actions/auth';
+import { createAction } from '@/lib/action-factory';
+import { USER_ROLES } from '@/lib/constants';
 import { revalidatePath } from 'next/cache';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -16,6 +18,7 @@ const UpdateProfileSchema = z.object({
   contactNumber: z.string().optional(),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(6).optional().or(z.literal('')),
+  requestId: z.string().optional(),
 });
 
 /**
@@ -104,62 +107,51 @@ export async function getMyProfile() {
  * Update the currently logged-in user's own profile.
  */
 export async function updateMyProfile(data: any) {
-  const session = await getSessionAction();
-  if (!session) {
-    logger.security('Unauthenticated profile update attempt');
-    return { success: false, error: 'Not authenticated.' };
-  }
+  return createAction({
+    name: 'updateMyProfile',
+    inputSchema: UpdateProfileSchema,
+    allowedRoles: [USER_ROLES.STUDENT, USER_ROLES.TEACHER, USER_ROLES.ADMINISTRATOR, USER_ROLES.SUPERADMIN],
+    handler: async (validatedData, { user: session }) => {
+      const { firstName, lastName, email, enrollmentNumber, contactNumber, currentPassword, newPassword } = validatedData;
 
-  await dbConnect();
+      // Check email uniqueness (excluding current user)
+      const existing = await User.findOne({ email, _id: { $ne: session!.id } });
+      if (existing) throw new Error('Email is already taken by another account.');
 
-  const validated = UpdateProfileSchema.safeParse(data);
-  if (!validated.success) {
-    return { success: false, error: 'Invalid data: ' + validated.error.errors[0].message };
-  }
+      // Check enrollment uniqueness
+      if (enrollmentNumber && enrollmentNumber.trim() !== '') {
+        const existingEnrollment = await User.findOne({ enrollmentNumber: enrollmentNumber.trim(), _id: { $ne: session!.id } });
+        if (existingEnrollment) throw new Error('Enrollment Number is already in use.');
+      }
 
-  const { firstName, lastName, email, enrollmentNumber, contactNumber, currentPassword, newPassword } = validated.data;
+      const user = await User.findById(session!.id);
+      if (!user) throw new Error('User not found.');
 
-  // Check email uniqueness (excluding current user)
-  const existing = await User.findOne({ email, _id: { $ne: session.id } });
-  if (existing) return { success: false, error: 'Email is already taken by another account.' };
+      const updateData: any = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        enrollmentNumber: enrollmentNumber?.trim() || null,
+        contactNumber: contactNumber?.trim() || null,
+      };
 
-  // Check enrollment uniqueness
-  if (enrollmentNumber && enrollmentNumber.trim() !== '') {
-    const existingEnrollment = await User.findOne({ enrollmentNumber: enrollmentNumber.trim(), _id: { $ne: session.id } });
-    if (existingEnrollment) return { success: false, error: 'Enrollment Number is already in use.' };
-  }
+      // Password change — requires current password verification
+      if (newPassword && newPassword.trim().length > 0) {
+        if (!currentPassword) {
+          throw new Error('Current password is required to set a new password.');
+        }
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+          logger.security('Failed password change attempt: Incorrect current password', { userId: session!.id });
+          throw new Error('Current password is incorrect.');
+        }
+        updateData.password = await bcrypt.hash(newPassword, 12);
+      }
 
-  const user = await User.findById(session.id);
-  if (!user) return { success: false, error: 'User not found.' };
-
-  const updateData: any = {
-    firstName: firstName.trim(),
-    lastName: lastName.trim(),
-    email: email.trim(),
-    enrollmentNumber: enrollmentNumber?.trim() || null,
-    contactNumber: contactNumber?.trim() || null,
-  };
-
-  // Password change — requires current password verification
-  if (newPassword && newPassword.trim().length > 0) {
-    if (!currentPassword) {
-      return { success: false, error: 'Current password is required to set a new password.' };
+      await User.findByIdAndUpdate(session!.id, updateData);
+      logger.info('Profile updated', { userId: session!.id });
+      revalidatePath('/profile');
+      return { success: true };
     }
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) {
-      logger.security('Failed password change attempt: Incorrect current password', { userId: session.id });
-      return { success: false, error: 'Current password is incorrect.' };
-    }
-    updateData.password = await bcrypt.hash(newPassword, 12);
-  }
-
-  try {
-    await User.findByIdAndUpdate(session.id, updateData);
-    logger.info('Profile updated', { userId: session.id });
-    revalidatePath('/profile');
-    return { success: true };
-  } catch (error: any) {
-    logger.error('updateMyProfile error', { error: error.message });
-    return { success: false, error: 'Profile update failed' };
-  }
+  }, data);
 }

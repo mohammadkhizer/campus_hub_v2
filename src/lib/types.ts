@@ -39,6 +39,7 @@ export interface QuizAttempt {
   status: 'completed' | 'disqualified' | 'pending_review';
   answers: Record<string, string>;
   feedback?: string;
+  requestId?: string;
 }
 
 export interface Note {

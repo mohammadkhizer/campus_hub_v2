@@ -78,7 +78,8 @@ function StudentPlacementsContent() {
 
   const handleApply = async (driveId: string) => {
     setApplying(driveId);
-    const result = await applyToDriveAction(driveId);
+    const requestId = crypto.randomUUID();
+    const result = await applyToDriveAction({ driveId, requestId });
     if (result.success) {
       toast({ title: "Success", description: "Application submitted successfully!" });
       fetchData();
@@ -91,6 +92,7 @@ function StudentPlacementsContent() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await updatePlacementProfileAction({
+      requestId: crypto.randomUUID(),
       personalDetails: {
         tenthPercentage: profileData.tenthPercentage,
         twelfthPercentage: profileData.twelfthPercentage

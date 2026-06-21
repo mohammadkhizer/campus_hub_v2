@@ -76,8 +76,10 @@ function StudentComplaintsContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    const requestId = crypto.randomUUID();
     const result = await submitComplaintAction({
       ...formData,
+      requestId,
       evidence: evidence.map(e => ({ url: e.url, type: e.type, name: e.name }))
     });
     if (result.success) {

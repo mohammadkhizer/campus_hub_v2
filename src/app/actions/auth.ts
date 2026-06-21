@@ -35,7 +35,7 @@ export async function loginAction(formData: FormData) {
   try {
     // 1. Rate Limiting
     console.log('Checking rate limit...');
-    const rateLimit = await checkRateLimit({ limit: 20, windowMs: 60 * 1000 });
+    const rateLimit = await checkRateLimit({ limit: 20, windowMs: 60 * 1000 }, 'login');
     if (!rateLimit.success) {
       console.log('Rate limit exceeded');
       return { error: `Too many attempts. Try again in ${rateLimit.reset} seconds.` };
@@ -107,7 +107,7 @@ export async function loginAction(formData: FormData) {
 export async function signupAction(formData: FormData) {
   try {
     // 1. Rate Limiting
-    const rateLimit = await checkRateLimit({ limit: 3, windowMs: 60 * 60 * 1000 }); // 3 signups per hour per IP
+    const rateLimit = await checkRateLimit({ limit: 10, windowMs: 60 * 60 * 1000 }, 'signup'); // 10 signups per hour per IP
     if (!rateLimit.success) {
       return { error: 'Signup limit exceeded. Please try again later.' };
     }
@@ -454,7 +454,7 @@ export async function deleteCoordinatorAction(coordinatorId: string) {
 import { OAuth2Client } from 'google-auth-library';
 export async function googleLoginAction(credential: string) {
   try {
-    const rateLimit = await checkRateLimit({ limit: 5, windowMs: 60 * 1000 });
+    const rateLimit = await checkRateLimit({ limit: 5, windowMs: 60 * 1000 }, 'google-login');
     if (!rateLimit.success) return { error: 'Rate limit exceeded' };
 
     await dbConnect();

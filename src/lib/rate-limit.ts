@@ -24,6 +24,7 @@ interface RateLimitConfig {
 
 export async function checkRateLimit(
   config: RateLimitConfig = { limit: 10, windowMs: 60 * 1000 },
+  namespace: string = 'global',
   identifier?: string
 ) {
   let ip = identifier;
@@ -38,42 +39,42 @@ export async function checkRateLimit(
   }
 
   const now = Date.now();
+  const key = `ratelimit:${namespace}:${ip}`;
 
   // UPSTASH REDIS APPROACH
   if (redis) {
     try {
-      const key = `ratelimit:${ip}`;
+      const count = await redis.incr(key);
       
-      const [response] = await redis.pipeline()
-        .incr(key)
-        .pexpire(key, config.windowMs)
-        .exec();
-      
-      const count = Number(response);
+      if (count === 1) {
+        await redis.pexpire(key, config.windowMs);
+      }
       
       if (count > config.limit) {
+        const ttl = await redis.pttl(key);
         return {
           success: false,
           limit: config.limit,
           remaining: 0,
-          reset: Math.ceil(config.windowMs / 1000), // simplistic reset
+          reset: Math.ceil(Math.max(0, ttl) / 1000),
         };
       }
 
+      const ttl = await redis.pttl(key);
       return {
         success: true,
         limit: config.limit,
         remaining: config.limit - count,
-        reset: Math.ceil(config.windowMs / 1000),
+        reset: Math.ceil(Math.max(0, ttl) / 1000),
       };
     } catch (error) {
-      console.warn(`[RateLimit] Redis failed for ${ip}. Falling back to memory.`, error);
+      console.warn(`[RateLimit] Redis failed for ${key}. Falling back to memory.`, error);
       // Fall through to memory approach if redis throws
     }
   }
 
   // MEMORY FALLBACK APPROACH
-  let entry = rateLimitCache.get(ip);
+  let entry = rateLimitCache.get(key);
 
   // If no entry exists or the window has expired, reset
   if (!entry || now > entry.resetTime) {
@@ -95,7 +96,7 @@ export async function checkRateLimit(
 
   // Increment count
   entry.count += 1;
-  rateLimitCache.set(ip, entry);
+  rateLimitCache.set(key, entry);
 
   return {
     success: true,

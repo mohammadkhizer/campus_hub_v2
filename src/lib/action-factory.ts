@@ -5,6 +5,7 @@ import dbConnect from './mongoose';
 import { getSessionAction } from '@/app/actions/auth';
 import { logger } from './logger';
 import { UserRole } from './constants';
+import { checkIdempotency, saveIdempotency } from './idempotency';
 
 /**
  * Standardized Context for all Server Actions
@@ -63,7 +64,17 @@ export async function createAction<I extends z.ZodType, O>(
       }
     }
 
-    // 3. Input Validation
+    // 3. Idempotency Check
+    const requestId = (input as any)?.requestId;
+    if (session && requestId) {
+      const cachedResponse = await checkIdempotency(session.id, requestId);
+      if (cachedResponse) {
+        logger.info(`Replay detected [${name}]`, { userId: session.id, requestId });
+        return cachedResponse;
+      }
+    }
+
+    // 4. Input Validation
     let validatedInput = input;
     if (inputSchema) {
       const result = inputSchema.safeParse(input);
@@ -78,10 +89,16 @@ export async function createAction<I extends z.ZodType, O>(
       validatedInput = result.data;
     }
 
-    // 4. Execution
+    // 5. Execution
     const data = await handler(validatedInput, { user: session as any });
+    const response: ActionResponse<O> = { success: true, data };
+
+    // 6. Save for Idempotency
+    if (session && requestId) {
+      await saveIdempotency(session.id, requestId, response);
+    }
     
-    return { success: true, data };
+    return response;
   } catch (error: any) {
     logger.error(`Action Failure [${name}]`, { 
       error: error.message, 
