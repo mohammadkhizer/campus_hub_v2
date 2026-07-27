@@ -299,6 +299,7 @@ function CreateQuizContent() {
         }
         return {
           id: q.id,
+          type: 'mcq' as const,
           questionText: q.questionText.trim(),
           imageUrl: finalImageUrl,
           answerChoices: q.answerChoices,

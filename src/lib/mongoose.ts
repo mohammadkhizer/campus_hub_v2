@@ -26,6 +26,10 @@ async function dbConnect() {
       serverSelectionTimeoutMS: 5000, 
       socketTimeoutMS: 10000,
       family: 4, // Force IPv4 to avoid potential DNS issues
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      maxIdleTimeMS: 30000,
+      heartbeatFrequencyMS: 10000,
     };
 
     logger.info('DB: Creating new connection promise');

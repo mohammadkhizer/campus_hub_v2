@@ -1,0 +1,29 @@
+{
+  "common": {
+    "appName": "Campus Hub",
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "classrooms": "Classroom",
+    "courses": "Courses",
+    "quizzes": "Quizzes",
+    "feedback": "Feedback",
+    "complaints": "Complaints",
+    "placements": "Placements",
+    "profile": "Profile",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "security": "Security Protocol",
+    "help": "Help Center",
+    "pricing": "Pricing",
+    "login": "Login",
+    "logout": "Sign Out",
+    "getStarted": "Get Access",
+    "language": "Language"
+  },
+  "roles": {
+    "student": "Student",
+    "teacher": "Subject Coordinator",
+    "administrator": "Administrator",
+    "superadmin": "Super Admin"
+  }
+}

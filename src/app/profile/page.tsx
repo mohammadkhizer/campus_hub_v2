@@ -581,6 +581,38 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Danger Zone: GDPR Account Erasure */}
+        <Card className="border-red-200 bg-red-50/30 dark:bg-red-950/10 mt-6">
+          <CardHeader>
+            <CardTitle className="text-red-600 text-lg flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" /> Danger Zone — Delete Account
+            </CardTitle>
+            <CardDescription className="text-slate-600 text-xs">
+              Under GDPR Article 17 (Right to Erasure), you can permanently delete your Campus Hub account and personal records. This action is immediate and cannot be undone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="destructive" 
+              onClick={async () => {
+                if (confirm("Are you absolutely sure you want to permanently delete your account? All your personal data will be erased immediately.")) {
+                  const { deleteAccountAction } = await import('@/app/actions/account-deletion');
+                  const res = await deleteAccountAction();
+                  if (res.success) {
+                    toast({ title: "Account Deleted", description: "Your data has been erased." });
+                    router.push('/login');
+                  } else {
+                    toast({ title: "Error", description: res.error || "Failed to delete account", variant: "destructive" });
+                  }
+                }
+              }}
+              className="gap-2 text-xs font-semibold"
+            >
+              Permanently Delete Account
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

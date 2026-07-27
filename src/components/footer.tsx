@@ -39,7 +39,6 @@ export function Footer() {
                   <li><Link href="/courses" className="text-sm text-muted-foreground hover:text-primary transition-colors font-mono">Courses</Link></li>
                   <li><Link href="/quizzes" className="text-sm text-muted-foreground hover:text-primary transition-colors font-mono">Quiz</Link></li>
                   <li><Link href="/student/placements" className="text-sm text-muted-foreground hover:text-primary transition-colors font-mono">Placement</Link></li>
-                  <li><Link href="/student/ai" className="text-sm text-muted-foreground hover:text-primary transition-colors font-mono">AI Assistant</Link></li>
                 </ul>
               </div>
 
@@ -96,7 +95,7 @@ export function Footer() {
               <Mail className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <p className="text-sm font-bold text-foreground">Technical Support</p>
-                <p className="text-xs text-muted-foreground font-mono">support@campushub.edu</p>
+                <p className="text-xs text-muted-foreground font-mono">campushub.admin@gmail.com</p>
               </div>
             </div>
             <div className="flex items-start gap-3 pt-2">

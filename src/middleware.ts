@@ -30,8 +30,12 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-  // 2. Global Rate Limiting for API and Actions
-  if (request.nextUrl.pathname.startsWith('/api') || request.headers.get('next-action')) {
+  // 2. Global Rate Limiting for API and Actions (Health check is bypassed)
+  const isApiRequest = request.nextUrl.pathname.startsWith('/api');
+  const isHealthCheck = request.nextUrl.pathname === '/api/health';
+  const isNextAction = !!request.headers.get('next-action');
+
+  if ((isApiRequest && !isHealthCheck) || isNextAction) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
                (request as any).ip || 
                'anonymous';

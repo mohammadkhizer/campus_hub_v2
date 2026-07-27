@@ -1,0 +1,29 @@
+{
+  "common": {
+    "appName": "کیمپس ہب",
+    "home": "ہوم",
+    "dashboard": "ڈیش بورڈ",
+    "classrooms": "کلاس روم",
+    "courses": "کورسز",
+    "quizzes": "کوئز",
+    "feedback": "رائے",
+    "complaints": "شکایات",
+    "placements": "پلیسمنٹس",
+    "profile": "پروفائل",
+    "privacy": "رازداری کی پالیسی",
+    "terms": "سروس کی شرائط",
+    "security": "سیکیورٹی پروٹوکول",
+    "help": "مدد کا مرکز",
+    "pricing": "قیمتیں",
+    "login": "لاگ ان",
+    "logout": "سائن آؤٹ",
+    "getStarted": "شروع کریں",
+    "language": "زبان"
+  },
+  "roles": {
+    "student": "طالب علم",
+    "teacher": "مضمون کوآرڈینیٹر",
+    "administrator": "ایڈمنسٹریٹر",
+    "superadmin": "سپر ایڈمن"
+  }
+}
